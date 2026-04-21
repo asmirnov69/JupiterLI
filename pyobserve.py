@@ -146,33 +146,17 @@ def main():
     rl = RedisLoop()
     pl = PlotterLoop(rl)
 
-    if 1:
-        fig1 = Plot(pl, "pnl")
-        fig1.add_timeseries_scatter("pnl")
-        #fig1.add_timeseries_scatter("tot_val")
-        
-    fig1a = Plot(pl, "prices")
-    fig1a.add_timeseries_scatter("trade_price")
+    if 0:
+        fig1 = Plot(pl, "fig1")
+        fig1.add_timeseries_scatter("data1")
+        fig1.add_timeseries_scatter("data2")
 
-    if 1:
-        fig1b = Plot(pl, "qty")
-        #fig1b.add_timeseries_scatter("trade_qty")
-        fig1b.add_timeseries_scatter("tot_qty")
-        
-        fig2 = Plot(pl, "rewards")
-        fig2.add_scatter("dqm_model:episode.total_reward")
-        
-        fig3 = Plot(pl, "epsilon")
-        fig3.add_scatter("dqm_model:episode.epsilon")
-        
-        fig4 = Plot(pl, "final returns")
-        #fig4.add_scatter("sim-test:rets")
-        fig4.add_histogram("sim-test:rets")
-        
-        fig5 = Plot(pl, "loss")
-        #fig5.add_scatter("dqm_model:loss")
-        fig5.add_histogram("dqm_model:loss")
-        
+    fig2 = Plot(pl, "fig2")
+    fig2.add_histogram("data1")
+
+    fig3 = Plot(pl, "fig3")
+    fig3.add_scatter("data1")
+    
     asyncio.get_event_loop().create_task(pl.loop())
     
     # automatic run on page start
