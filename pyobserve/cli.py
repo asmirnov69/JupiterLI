@@ -24,7 +24,7 @@ class PlotterLoop:
             await self.rl.batch_is_done.wait()
             self.rl.batch_is_done = asyncio.Event()
             for plot in self.plots:
-                plot.fig.update()
+                plot.flush()
 
 
 def setup_page():
