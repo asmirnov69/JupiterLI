@@ -26,7 +26,7 @@ There are no tests and no linter config.
 
 ## Architecture
 
-The package lives in `pyobserve/` with three modules:
+The package lives in `pyobserve/`:
 
 ### `pyobserve/redis_utils.py` — Stream Consumption
 `RedisLoop` polls Redis Streams every 0.5s using `xread()`. Callers register stream keys with handlers via `subscribe(key, handler)`. After each polling cycle all handlers are called with their buffered messages (a list of Redis field-value dicts), the buffer is cleared, then `batch_is_done` (`asyncio.Event`) is set to signal the UI layer. `KeySubscriber` is a small dataclass bundling a buffer and its handler.
@@ -38,13 +38,19 @@ Curve classes `Histogram`, `Scatter`, `TimeseriesScatter` each hold an internal 
 
 `_extend_traces` bypasses NiceGUI's `fig.update()` / `Plotly.react()` by calling `Plotly.extendTraces` directly on the mounted Vue element via `client.run_javascript()`. This streams only the new delta to the client and avoids disrupting an in-progress pan or zoom gesture.
 
+### `pyobserve/config.py` — TTL Config Loader
+`load_config(pl, ttl_path)` parses a Turtle/RDF file with `rdflib` and builds the dashboard from it: each `nicegui:Plot` subject becomes a `Plot` (titled via `:title`), and each `nicegui:Scatter` / `nicegui:TimeseriesScatter` / `nicegui:Histogram` subject becomes a curve on its referenced `:on_plot`, subscribed to its `:redis_key`. The `nicegui:` and `:` (scratch) namespaces are hardcoded to `http://example.com/nicegui#` and `http://example.com/scratch#`.
+
 ### `pyobserve/cli.py` — UI Wiring (entry point: `pyobserve`)
-`setup_page` is registered as the NiceGUI page handler for `/`. Each browser connection gets its own `RedisLoop` and `PlotterLoop`. On disconnect the Redis polling task is cancelled.
+`setup_page` is registered as the NiceGUI page handler for `/`. Each browser connection gets its own `RedisLoop` and `PlotterLoop`, then calls `load_config(pl, "examples/producer.ttl")` to instantiate plots/curves from the TTL config. On disconnect the Redis polling task is cancelled.
 
 `PlotterLoop.loop()` waits on `batch_is_done`, resets the event, and calls `plot.flush()` on every `Plot`. The one `fig.update()` call at the top of `loop()` (before the while loop) is an initial render trigger only.
 
 ### `examples/producer.py` — Synthetic Data Source
 Publishes random integer values plus a `timestamp` field to Redis Streams `data1` and `data2` every ~0.25s using `xadd`. Streams are capped at 10,000 entries via `maxlen`. Run directly with `python examples/producer.py`.
+
+### `examples/producer.ttl` — Dashboard Config
+Turtle/RDF file declaring the plots and curves for `setup_page` to render. Contains SHACL shapes (`sh:NodeShape`) for `nicegui:Plot`, `nicegui:Scatter`, `nicegui:TimeseriesScatter`, `nicegui:Histogram` followed by instances (`:fig1`, `:fig2`, `:fig3` and their curves). The SHACL shapes are documentation/validation only — `load_config` reads the instance triples, not the shapes. Validate with `pyshacl -i rdfs examples/producer.ttl -f human`.
 
 ## Key Design Decisions
 
@@ -54,3 +60,4 @@ Publishes random integer values plus a `timestamp` field to Redis Streams `data1
 - **extendTraces over react**: Live updates use `Plotly.extendTraces` via raw JavaScript rather than `Plotly.react`, so pan/zoom state is preserved during streaming updates.
 - **Redis URL**: Hardcoded as `"redis://localhost"` in both `producer.py` and `redis_utils.py` — change both if using a remote Redis instance.
 - **Stream message schema**: Each Redis message must contain at minimum a `"value"` field (float string). `TimeseriesScatter` additionally requires a `"timestamp"` field (Unix epoch float string).
+- **TTL-driven dashboard**: Plots and curves are declared in a Turtle file (`examples/producer.ttl`) rather than hardcoded in `cli.py`. Adding or reconfiguring a chart means editing the TTL, not the Python. The config path is currently hardcoded in `setup_page` — change it there to point at a different file.

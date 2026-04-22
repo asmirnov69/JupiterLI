@@ -9,7 +9,11 @@ dependencies = [
     "redis",
     "nicegui",
     "plotly",
+    "rdflib",
 ]
 
 [project.scripts]
 pyobserve = "pyobserve.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["pyobserve*"]
