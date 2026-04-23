@@ -8,26 +8,35 @@
 @prefix jli: <http://example.com/jupiterli#> .
 @prefix : <http://example.com/scratch#> .
 
-jli:Plot a rdfs:Class, sh:NodeShape; sh:targetClass jli:Plot;
+jli:Plot a rdfs:Class, sh:NodeShape;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [ sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
              .
 
-jli:Scatter a rdfs:Class, sh:NodeShape; sh:targetClass jli:Scatter;
+#:all_jli_colors a rdf:List; rdf:first "red"; rdf:rest ("green" "blue") .
+:all_jli_colors a rdf:List; rdf:rest ("red" "green" "blue") .
+
+jli:Color a rdfs:Class, sh:NodeShape;
+	   sh:closed true; sh:ignoredProperties ( rdf:type ) ;
+	   sh:property [ sh:path rdf:value; sh:datatype xsd:string; sh:in :all_jli_colors; sh:minCount 1; sh:maxCount 1 ];
+	   .
+
+jli:Scatter a rdfs:Class, sh:NodeShape;
+             sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
+             sh:property [sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
+	     sh:property [sh:path :line_color; sh:class jli:Color; sh:minCount 0; sh:maxCount 1 ];
+	     sh:property [sh:path :on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
+             sh:property [sh:path :redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
+             .
+
+jli:TimeseriesScatter a rdfs:Class, sh:NodeShape;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
              sh:property [sh:path :on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
              sh:property [sh:path :redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
              .
 
-jli:TimeseriesScatter a rdfs:Class, sh:NodeShape; sh:targetClass jli:Scatter;
-             sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
-             sh:property [sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
-             sh:property [sh:path :on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
-             sh:property [sh:path :redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
-             .
-
-jli:Histogram a rdfs:Class, sh:NodeShape; sh:targetClass jli:Scatter;
+jli:Histogram a rdfs:Class, sh:NodeShape;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
              sh:property [sh:path :on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
@@ -35,8 +44,8 @@ jli:Histogram a rdfs:Class, sh:NodeShape; sh:targetClass jli:Scatter;
              .
 
 
-:fig1 a jli:Plot; :title "fig1" .
-:fig1_c1 a jli:Scatter; :title "trace0"; :on_plot :fig1; :redis_key "data1" .
+:fig1 a jli:Plot; :title "FIG1" .
+:fig1_c1 a jli:Scatter; :title "trace0"; :on_plot :fig1; :redis_key "data1"; :line_color [ a jli:Color; rdf:value "red" ].
 :fig1_c2 a jli:Scatter; :title "trace1"; :on_plot :fig1; :redis_key "data2" .
 
 :fig2 a jli:Plot; :title "fig2" .
