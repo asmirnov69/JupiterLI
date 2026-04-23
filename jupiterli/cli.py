@@ -21,7 +21,7 @@ def setup_page():
 
 def main():
     ui.page('/')(setup_page)
-    ui.run(reload=False)
+    ui.run(reload=True, uvicorn_reload_includes='*.py,*.ttl')
 
 
 if __name__ in {"__main__", "__mp_main__"}:
