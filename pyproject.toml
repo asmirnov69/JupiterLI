@@ -18,3 +18,9 @@ jupiterli = "jupiterli.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["jupiterli*"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+jupiterli = ["ttl/*.ttl"]

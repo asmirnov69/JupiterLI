@@ -22,9 +22,10 @@ class NiceGUIApplication:
         any_errors = False
         for prefix, namespace in g.namespaces():
             if prefix in known_prefixes:
-                print(prefix, namespace)
-                print(type(prefix), type(namespace))
+                #print(prefix, namespace)
+                #print(type(prefix), type(namespace))
                 if known_prefixes.get(prefix) != namespace:
+                    print("problem with prefix", prefix)
                     any_errors = True
 
         if any_errors:
