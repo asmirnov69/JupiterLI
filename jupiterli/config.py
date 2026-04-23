@@ -1,13 +1,13 @@
 from rdflib import Graph, RDF, URIRef
-from pyobserve.plots import Plot
+from jupiterli.plots import Plot
 
-NICEGUI = "http://example.com/nicegui#"
+JLI = "http://example.com/jupiterli#"
 SCRATCH = "http://example.com/scratch#"
 
 _CURVE_METHODS = {
-    URIRef(NICEGUI + "Scatter"): "add_scatter",
-    URIRef(NICEGUI + "TimeseriesScatter"): "add_timeseries_scatter",
-    URIRef(NICEGUI + "Histogram"): "add_histogram",
+    URIRef(JLI + "Scatter"): "add_scatter",
+    URIRef(JLI + "TimeseriesScatter"): "add_timeseries_scatter",
+    URIRef(JLI + "Histogram"): "add_histogram",
 }
 
 
@@ -20,7 +20,7 @@ def load_config(pl, ttl_path):
     redis_key = URIRef(SCRATCH + "redis_key")
 
     plots = {}
-    for s in g.subjects(RDF.type, URIRef(NICEGUI + "Plot")):
+    for s in g.subjects(RDF.type, URIRef(JLI + "Plot")):
         plots[s] = Plot(pl, str(g.value(s, title)))
 
     for curve_type, method_name in _CURVE_METHODS.items():

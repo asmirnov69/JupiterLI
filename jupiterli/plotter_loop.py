@@ -1,5 +1,5 @@
 import asyncio
-from pyobserve.redis_utils import RedisLoop
+from jupiterli.redis_utils import RedisLoop
 
 
 class PlotterLoop:

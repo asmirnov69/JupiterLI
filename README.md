@@ -38,7 +38,7 @@ python examples/producer.py
 
 In another terminal, start the dashboard:
 ```bash
-pyobserve
+jupiterli
 ```
 
 Then open http://localhost:8080 in your browser.

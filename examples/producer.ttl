@@ -5,42 +5,42 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
-@prefix nicegui: <http://example.com/nicegui#> .
+@prefix jli: <http://example.com/jupiterli#> .
 @prefix : <http://example.com/scratch#> .
 
-nicegui:Plot a rdfs:Class, sh:NodeShape; sh:targetClass nicegui:Plot;
+jli:Plot a rdfs:Class, sh:NodeShape; sh:targetClass jli:Plot;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [ sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
              .
 
-nicegui:Scatter a rdfs:Class, sh:NodeShape; sh:targetClass nicegui:Scatter;
+jli:Scatter a rdfs:Class, sh:NodeShape; sh:targetClass jli:Scatter;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
-             sh:property [sh:path :on_plot; sh:class nicegui:Plot; sh:minCount 1; sh:maxCount 1 ];
+             sh:property [sh:path :on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
              sh:property [sh:path :redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
              .
 
-nicegui:TimeseriesScatter a rdfs:Class, sh:NodeShape; sh:targetClass nicegui:Scatter;
+jli:TimeseriesScatter a rdfs:Class, sh:NodeShape; sh:targetClass jli:Scatter;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
-             sh:property [sh:path :on_plot; sh:class nicegui:Plot; sh:minCount 1; sh:maxCount 1 ];
+             sh:property [sh:path :on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
              sh:property [sh:path :redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
              .
 
-nicegui:Histogram a rdfs:Class, sh:NodeShape; sh:targetClass nicegui:Scatter;
+jli:Histogram a rdfs:Class, sh:NodeShape; sh:targetClass jli:Scatter;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [sh:path :title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
-             sh:property [sh:path :on_plot; sh:class nicegui:Plot; sh:minCount 1; sh:maxCount 1 ];
+             sh:property [sh:path :on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
              sh:property [sh:path :redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
              .
 
 
-:fig1 a nicegui:Plot; :title "fig1" .
-:fig1_c1 a nicegui:Scatter; :title "trace0"; :on_plot :fig1; :redis_key "data1" .
-:fig1_c2 a nicegui:Scatter; :title "trace1"; :on_plot :fig1; :redis_key "data2" .
+:fig1 a jli:Plot; :title "fig1" .
+:fig1_c1 a jli:Scatter; :title "trace0"; :on_plot :fig1; :redis_key "data1" .
+:fig1_c2 a jli:Scatter; :title "trace1"; :on_plot :fig1; :redis_key "data2" .
 
-:fig2 a nicegui:Plot; :title "fig2" .
-:fig2_c1 a nicegui:Histogram; :title "trace1"; :on_plot :fig2; :redis_key "data1" .
+:fig2 a jli:Plot; :title "fig2" .
+:fig2_c1 a jli:Histogram; :title "trace1"; :on_plot :fig2; :redis_key "data1" .
 
-:fig3 a nicegui:Plot; :title "fig3" .
-:fig3_c1 a nicegui:TimeseriesScatter; :title "trace0"; :on_plot :fig3; :redis_key "data1" .
+:fig3 a jli:Plot; :title "fig3" .
+:fig3_c1 a jli:TimeseriesScatter; :title "trace0"; :on_plot :fig3; :redis_key "data1" .

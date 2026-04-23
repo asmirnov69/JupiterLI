@@ -1,8 +1,8 @@
 import asyncio, uuid
 from nicegui import ui
-from pyobserve.redis_utils import RedisLoop
-from pyobserve.plotter_loop import PlotterLoop
-from pyobserve.config import load_config
+from jupiterli.redis_utils import RedisLoop
+from jupiterli.plotter_loop import PlotterLoop
+from jupiterli.config import load_config
 
 
 def setup_page():

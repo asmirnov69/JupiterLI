@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyobserve"
+name = "jupiterli"
 version = "0.1.0"
 dependencies = [
     "redis",
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pyobserve = "pyobserve.cli:main"
+jupiterli = "jupiterli.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["pyobserve*"]
+include = ["jupiterli*"]
