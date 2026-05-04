@@ -17,3 +17,8 @@ podman exec -it peaceful_lumiere /app/venv/bin/jupiterli /app/JupiterLI/examples
 
 podman run -rm -p 8080:8080 -p 6379:6379 alpine-test /app/venv/bin/jupiterli /app/JupiterLI/examples/producer.ttl
 ```
+
+```
+podman build -t jupiterli -f Dockerfile.jupiterli
+sh -x run.sh ../examples/producer.ttl
+```

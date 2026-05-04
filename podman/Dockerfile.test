@@ -25,10 +25,10 @@ RUN /app/venv/bin/pip install /app/JupiterLI/
 #RUN pip3 install git+https://github.com/asmirnov69/JupiterLI
 
 # Make startup script executable
-RUN chmod +x /app/start.sh
+RUN chmod +x /app/docker-start.sh
 
 # Expose Redis port (optional)
 EXPOSE 6379
 
 # Start everything
-CMD ["/app/start.sh"]
+CMD ["/app/docker-start.sh"]
