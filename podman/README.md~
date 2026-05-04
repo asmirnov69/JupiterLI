@@ -1,0 +1,4 @@
+```
+podman build -t alpine-test .
+
+```

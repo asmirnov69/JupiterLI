@@ -28,8 +28,9 @@ class RedisLoop:
         except Exception as e:
             print("exception in RedisLoop::loop: Stopping loop due to:", e)
             traceback.print_exception(type(e), e, e.__traceback__)
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as ce:
             print("exception in RedisLoop::loop: Cancelled")
+            traceback.print_exception(type(ce), ce, ce.__traceback__)
 
     async def redis_update_loop_body(self):
         running_env = True
@@ -51,7 +52,7 @@ class RedisLoop:
                 l_stream_items = [x for x in stream_items]
                 last_id = l_stream_items[-1][0]
                 self.last_ids[key] = last_id
-                print("len(stream_items):", len(l_stream_items))
+                print("len(stream_items):", len(l_stream_items), stream_name)
                 subsciber.buffer.extend([x[1] for x in l_stream_items])
 
             for key, s in self.subscribers.items():
