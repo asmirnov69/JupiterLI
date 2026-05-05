@@ -62,7 +62,10 @@ class NiceGUIApplication:
     def launch(self):
         rl = RedisLoop()
         pl = PlotterLoop(rl)
-        
+
+        ui.button('Hello', on_click=lambda: print('Hello from new button', flush=True)) \
+            .classes('absolute top-2 left-2 z-50')
+
         load_config(self.g, pl)
         
         loop = asyncio.get_event_loop()
