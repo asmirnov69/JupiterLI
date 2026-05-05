@@ -40,6 +40,9 @@ class RedisLoop:
         while running_env:
             await asyncio.sleep(0.5)
 
+            if len(self.last_ids) == 0:
+                continue
+            
             all_stream_data = await self.r.xread(self.last_ids, block = 0)
 
             print(f"xread returned {len(all_stream_data) if all_stream_data else 0} streams")
