@@ -23,4 +23,4 @@ include = ["jupiterli*"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-jupiterli = ["ttl/*.ttl"]
+jupiterli = ["backend/ttl/*.ttl"]
