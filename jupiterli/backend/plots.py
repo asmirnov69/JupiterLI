@@ -3,7 +3,6 @@ import json
 from nicegui import ui
 import plotly.graph_objects as go
 
-
 def make_plot__(title):
     fig = go.Figure()
     fig.update_layout(title=title, autosize=True, uirevision='constant')

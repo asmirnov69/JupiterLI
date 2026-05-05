@@ -1,6 +1,5 @@
 import asyncio
-from jupiterli.redis_utils import RedisLoop
-
+from .redis_utils import RedisLoop
 
 class PlotterLoop:
     def __init__(self, rl: RedisLoop):

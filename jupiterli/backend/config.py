@@ -1,5 +1,5 @@
 from rdflib import Graph, RDF, URIRef
-from jupiterli.plots import Plot
+from .plots import Plot
 
 JLI = "http://example.com/jupiterli#"
 SCRATCH = "http://example.com/scratch#"

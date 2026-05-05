@@ -1,10 +1,9 @@
 import asyncio, os, pathlib, sys, uuid
 from nicegui import ui, app
-from jupiterli.redis_utils import RedisLoop
-from jupiterli.plotter_loop import PlotterLoop
-from jupiterli.config import load_config
+from .redis_utils import RedisLoop
+from .plotter_loop import PlotterLoop
+from .config import load_config
 from rdflib import Graph, URIRef, Namespace
-from importlib import resources
 
 TTL_PATH = sys.argv[1] # "examples/producer.ttl"
 PKG_DIR = pathlib.Path(__file__).parent
@@ -33,9 +32,9 @@ class NiceGUIApplication:
             sys.exit(2)
         
     def load_config_graph(self):
+        jli_shacl_ttl_path = os.path.join(PKG_DIR, "ttl/jli-shacl.ttl")
         try:
             shapes_g = Graph()
-            jli_shacl_ttl_path = resources.files("jupiterli").joinpath("ttl/jli-shacl.ttl")
             print("parsing", jli_shacl_ttl_path)
             shapes_g.parse(jli_shacl_ttl_path, format = "turtle")
             self.verify_prefixes(shapes_g)

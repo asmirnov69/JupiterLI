@@ -5,7 +5,7 @@
 @prefix jli: <http://example.com/jupiterli#> .
 @prefix : <http://example.com/scratch#> .
 
-:fig1 a jli:Plot; jli:title "FIG 1" .
+:fig1 a jli:Plot; jli:title "Fig 1" .
 :fig1_c1 a jli:Scatter; jli:title "trace0"; jli:on_plot :fig1; jli:redis_key "data1"; jli:line_color [ a jli:Color; rdf:value "red" ].
 :fig1_c2 a jli:Scatter; jli:title "trace1"; jli:on_plot :fig1; jli:redis_key "data2" .
 
