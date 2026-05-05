@@ -26,7 +26,7 @@ docker run -p 6379:6379 redis
 ## Install JupiterLI
 
 ```bash
-pip install -e .
+pip install git+https://github.com/asmirnov69/JupiterLI
 ```
 
 ## Run the example
@@ -38,7 +38,7 @@ python examples/producer.py
 
 In another terminal, start the dashboard:
 ```bash
-jupiterli
+jupiterli-backend examples/produced.ttl
 ```
 
 Then open http://localhost:8080 in your browser.

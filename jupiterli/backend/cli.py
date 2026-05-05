@@ -57,14 +57,18 @@ class NiceGUIApplication:
         self.g = Graph()
         self.g.parse(jli_shacl_ttl_path, format = "turtle")
         self.g.parse(TTL_PATH, format = "turtle")
-            
+
+    async def clear_page(self, rl):
+        await rl.flush()
+        ui.run_javascript('location.reload()')        
         
     def launch(self):
         rl = RedisLoop()
         pl = PlotterLoop(rl)
 
-        ui.button('Hello', on_click=lambda: print('Hello from new button', flush=True)) \
-            .classes('absolute top-2 left-2 z-50')
+        #ui.button('Clear', on_click=lambda: print('Hello from new button', flush=True)).classes('absolute top-2 left-2 z-50')
+        #ui.button('Clear', on_click=lambda: rl.flush()).classes('absolute top-2 left-2 z-50')
+        ui.button('Clear', on_click=lambda: self.clear_page(rl)).classes('absolute top-2 left-2 z-50')
 
         load_config(self.g, pl)
         

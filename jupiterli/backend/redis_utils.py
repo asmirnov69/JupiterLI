@@ -15,6 +15,9 @@ class RedisLoop:
         self.id_segments = {} # key -> (begin_id, end_id)
         self.batch_is_done = asyncio.Event()
 
+    async def flush(self):
+        await self.r.flushdb()
+        
     def subscribe(self, key, message_handler):
         if key in self.subscribers:
             return
