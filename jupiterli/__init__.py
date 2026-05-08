@@ -5,7 +5,7 @@ redis_conn = redis.from_url(REDIS_URL, decode_responses=True)
 
 def add_serial_point(key, value):
     global redis_conn
-    redis_conn.xadd(key, {"value": value}, maxlen = 10000)    
+    redis_conn.xadd(key, {"value": float(value)}, maxlen = 10000)    
 
 def add_ts_point(key, ts, value):
     global redis_conn
