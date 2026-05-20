@@ -1,8 +1,8 @@
 import asyncio
-from .redis_utils import RedisLoop
+from .zmq_utils import ZmqLoop
 
 class PlotterLoop:
-    def __init__(self, rl: RedisLoop):
+    def __init__(self, rl: ZmqLoop):
         self.rl = rl
         self.plots = set()
         self.scatters = {}   # key -> list[Scatter]

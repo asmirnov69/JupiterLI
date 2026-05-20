@@ -1,6 +1,6 @@
 import asyncio, os, pathlib, sys, uuid
 from nicegui import ui, app
-from .redis_utils import RedisLoop
+from .zmq_utils import ZmqLoop
 from .plotter_loop import PlotterLoop
 from .config import load_config
 from rdflib import Graph, URIRef, Namespace
@@ -63,7 +63,7 @@ class NiceGUIApplication:
         ui.run_javascript('location.reload()')        
         
     def launch(self):
-        rl = RedisLoop()
+        rl = ZmqLoop()
         pl = PlotterLoop(rl)
 
         #ui.button('Clear', on_click=lambda: print('Hello from new button', flush=True)).classes('absolute top-2 left-2 z-50')
@@ -75,9 +75,9 @@ class NiceGUIApplication:
         loop = asyncio.get_event_loop()
         loop.create_task(pl.loop())
         
-        redis_task = loop.create_task(rl.loop())
-        redis_task.set_name(f"redis-task--{uuid.uuid4().hex[:8]}")
-        ui.context.client.on_disconnect(redis_task.cancel)
+        zmq_task = loop.create_task(rl.loop())
+        zmq_task.set_name(f"zmq-task--{uuid.uuid4().hex[:8]}")
+        ui.context.client.on_disconnect(zmq_task.cancel)
         
 
 def _watched_mtimes():

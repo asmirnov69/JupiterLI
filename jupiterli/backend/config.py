@@ -13,7 +13,7 @@ _CURVE_METHODS = {
 def load_config(g:Graph, pl):
     title = URIRef(JLI + "title")
     on_plot = URIRef(JLI + "on_plot")
-    redis_key = URIRef(JLI + "redis_key")
+    key = URIRef(JLI + "key")
 
     plots = {}
     for s in g.subjects(RDF.type, URIRef(JLI + "Plot")):
@@ -22,6 +22,6 @@ def load_config(g:Graph, pl):
     for curve_type, method_name in _CURVE_METHODS.items():
         for s in g.subjects(RDF.type, curve_type):
             plot = plots[g.value(s, on_plot)]
-            getattr(plot, method_name)(str(g.value(s, redis_key)))
+            getattr(plot, method_name)(str(g.value(s, key)))
 
     return plots

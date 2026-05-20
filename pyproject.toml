@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "jupiterli"
 version = "0.1.4"
 dependencies = [
-    "redis",
+    "pyzmq",
     "nicegui",
     "plotly",
     "rdflib",

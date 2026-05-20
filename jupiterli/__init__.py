@@ -1,13 +1,29 @@
-import redis
+import json
+import zmq
 
-REDIS_URL = "redis://localhost"
-redis_conn = redis.from_url(REDIS_URL, decode_responses=True)
+ZMQ_PUB_ENDPOINT = "tcp://*:5555"
+
+_ctx = None
+_pub_socket = None
+
+
+def _get_pub_socket():
+    global _ctx, _pub_socket
+    if _pub_socket is None:
+        _ctx = zmq.Context.instance()
+        _pub_socket = _ctx.socket(zmq.PUB)
+        _pub_socket.bind(ZMQ_PUB_ENDPOINT)
+    return _pub_socket
+
+
+def _send(key, payload):
+    sock = _get_pub_socket()
+    sock.send_multipart([key.encode("utf-8"), json.dumps(payload).encode("utf-8")])
+
 
 def add_serial_point(key, value):
-    global redis_conn
-    redis_conn.xadd(key, {"value": float(value)}, maxlen = 10000)    
+    _send(key, {"value": float(value)})
+
 
 def add_ts_point(key, ts, value):
-    global redis_conn
-    redis_conn.xadd(key, {"timestamp": ts, "value": value}, maxlen = 10000)
-    
+    _send(key, {"timestamp": ts, "value": value})

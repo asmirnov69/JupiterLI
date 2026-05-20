@@ -103,23 +103,23 @@ class Plot:
         self.curves = []
         self.fig = ui.plotly(make_plot__(title=title)).style('width: 100%; height: 100%;')
 
-    def add_scatter(self, redis_key):
+    def add_scatter(self, key):
         new_scatter = Scatter(self, data_idx=len(self.fig.figure.data))
         self.curves.append(new_scatter)
-        self.pl.rl.subscribe(redis_key, self.pl.handle_messages)
-        self.pl.scatters.setdefault(redis_key, []).append(new_scatter)
+        self.pl.rl.subscribe(key, self.pl.handle_messages)
+        self.pl.scatters.setdefault(key, []).append(new_scatter)
 
-    def add_timeseries_scatter(self, redis_key):
+    def add_timeseries_scatter(self, key):
         new_scatter = TimeseriesScatter(self, data_idx=len(self.fig.figure.data))
         self.curves.append(new_scatter)
-        self.pl.rl.subscribe(redis_key, self.pl.handle_messages)
-        self.pl.scatters.setdefault(redis_key, []).append(new_scatter)
+        self.pl.rl.subscribe(key, self.pl.handle_messages)
+        self.pl.scatters.setdefault(key, []).append(new_scatter)
 
-    def add_histogram(self, redis_key):
+    def add_histogram(self, key):
         new_hist = Histogram(self, data_idx=len(self.fig.figure.data))
         self.curves.append(new_hist)
-        self.pl.rl.subscribe(redis_key, self.pl.handle_messages)
-        self.pl.histograms.setdefault(redis_key, []).append(new_hist)
+        self.pl.rl.subscribe(key, self.pl.handle_messages)
+        self.pl.histograms.setdefault(key, []).append(new_hist)
 
     def flush(self):
         for curve in self.curves:

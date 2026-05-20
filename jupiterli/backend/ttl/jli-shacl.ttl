@@ -25,19 +25,19 @@ jli:Scatter a rdfs:Class, sh:NodeShape;
              sh:property [sh:path jli:title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
 	     sh:property [sh:path jli:line_color; sh:class jli:Color; sh:minCount 0; sh:maxCount 1 ];
 	     sh:property [sh:path jli:on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
-             sh:property [sh:path jli:redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
+             sh:property [sh:path jli:key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
              .
 
 jli:TimeseriesScatter a rdfs:Class, sh:NodeShape;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [sh:path jli:title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
              sh:property [sh:path jli:on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
-             sh:property [sh:path jli:redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
+             sh:property [sh:path jli:key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
              .
 
 jli:Histogram a rdfs:Class, sh:NodeShape;
              sh:closed true; sh:property [ sh:path rdf:type; sh:nodeKind sh:IRI ];
              sh:property [sh:path jli:title; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ];
              sh:property [sh:path jli:on_plot; sh:class jli:Plot; sh:minCount 1; sh:maxCount 1 ];
-             sh:property [sh:path jli:redis_key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
+             sh:property [sh:path jli:key; sh:datatype xsd:string; sh:minCount 1; sh:maxCount 1 ]
              .
