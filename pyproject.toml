@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jupiterli"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
     "pyzmq",
     "nicegui",
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-jupiterli-backend = "jupiterli.backend.cli:main" # backend
+jupiterli-nicegui = "jupiterli.nicegui.cli:main" # nicegui webapp for browser use
 
 [tool.setuptools.packages.find]
 include = ["jupiterli*"]

@@ -19,9 +19,9 @@ In one terminal, start the data producer (publishes random values on topics `dat
 python examples/producer.py
 ```
 
-In another terminal, start the dashboard:
+In another terminal, start the nicegui-based dashboard:
 ```bash
-jupiterli-backend examples/producer.ttl
+jupiterli-nicegui examples/producer.ttl
 ```
 
 Then open http://localhost:8080 in your browser.
