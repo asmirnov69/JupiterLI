@@ -1,6 +1,6 @@
 import asyncio
 import random, time
-from jupiterli import dump_run_info
+from jupiterli import save_run_dets
 from jupiterli import add_ts_point, add_serial_point
 
 async def producer():
@@ -19,5 +19,5 @@ def main():
     asyncio.run(producer())
 
 if __name__ == "__main__":
-    dump_run_info()
+    save_run_dets()
     main()
