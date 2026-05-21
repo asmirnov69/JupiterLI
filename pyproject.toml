@@ -6,11 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "jupiterli"
 version = "0.2.0"
 dependencies = [
-    "pyzmq",
-    "nicegui",
-    "plotly",
-    "rdflib",
-    "pyshacl",
+    "pyzmq", "clickhouse-driver",
+    "nicegui", "plotly",
+    "rdflib", "pyshacl",
 ]
 
 [project.scripts]
