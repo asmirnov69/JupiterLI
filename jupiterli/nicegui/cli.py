@@ -1,5 +1,6 @@
 import asyncio, os, pathlib, sys, uuid
 from nicegui import ui, app
+from starlette.requests import Request
 from .redis_utils import RedisLoop
 from .plotter_loop import PlotterLoop
 from .config import load_config
@@ -34,8 +35,15 @@ class NiceGUIApplication:
             print("prefix verification failed")
             sys.exit(2)
 
-    def load_series_ids_d(self):
-        rows = self.ch.execute("select series_id, key from series_dets where run_id = '78077f01-d718-49de-88e6-8b4915547c4b'")
+    def load_series_ids_d(self, run_id):
+        if run_id is None:
+            rows = self.ch.execute("select run_id from runs_dets where created_ts = (select max(created_ts) from runs_dets)")
+            if len(rows) == 1:
+                run_id = rows[0][0]
+            else:
+                raise Exception("can't find latest run_id")
+        ui.page_title(f"run_id={run_id}")
+        rows = self.ch.execute(f"select series_id, key from series_dets where run_id = '{run_id}'")
         for r in rows:
             series_id, key = r
             self.series_ids_d[series_id] = key
@@ -72,7 +80,8 @@ class NiceGUIApplication:
         await rl.flush()
         ui.run_javascript('location.reload()')        
         
-    def launch(self):
+    def launch(self, request:Request):
+        run_id = request.query_params.get('run_id')
         rl = RedisLoop(self)
         pl = PlotterLoop(rl)
 
@@ -80,7 +89,7 @@ class NiceGUIApplication:
         #ui.button('Clear', on_click=lambda: rl.flush()).classes('absolute top-2 left-2 z-50')
         ui.button('Clear', on_click=lambda: self.clear_page(rl)).classes('absolute top-2 left-2 z-50')
 
-        self.load_series_ids_d()
+        self.load_series_ids_d(run_id)
         load_config(self.g, pl)
         
         loop = asyncio.get_event_loop()

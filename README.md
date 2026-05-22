@@ -41,4 +41,5 @@ In another terminal, start the dashboard:
 jupiterli-backend examples/produced.ttl
 ```
 
-Then open http://localhost:8080 in your browser.
+Then open http://localhost:8080 in your browser. If you know run_id use: http://localhost:8080/?run_id=<run_id>
+
