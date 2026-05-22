@@ -38,7 +38,7 @@ python examples/producer.py
 
 In another terminal, start the dashboard:
 ```bash
-jupiterli-backend examples/produced.ttl
+jupiterli-backend examples/producer.ttl
 ```
 
 Then open http://localhost:8080 in your browser. If you know run_id use: http://localhost:8080/?run_id=<run_id>

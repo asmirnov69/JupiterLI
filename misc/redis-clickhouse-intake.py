@@ -11,11 +11,44 @@ BLOCK_MS = 1000
 FLUSH_INTERVAL_SEC = 2.0
 last_flush = time.time()
 
+def create_all_tables(ch):
+    qs = []
+    qs.append("""
+    CREATE TABLE IF NOT EXISTS runs_dets (
+    run_id String,
+    created_ts Float64, host String, pid Int64,
+    argv0 String, args String
+    ) ENGINE = MergeTree ORDER BY (run_id)
+    """)
+    
+    qs.append("""
+    create table if not exists series_dets (
+    series_id String,
+    run_id String,
+    key String
+    ) ENGINE = MergeTree ORDER BY (series_id)
+    """)
+
+    qs.append("""
+    create table if not exists series (
+    series_id String,
+    run_serial_num Int64,
+    timestamp Float64,
+    value Float64
+    ) ENGINE = MergeTree ORDER BY (series_id, run_serial_num)
+    """)
+
+    for q in qs:
+        print(q)
+        ch.execute(q)
+
+
 class StreamToClickHouse:
 
     def __init__(self):
         self.r = redis.Redis(host="localhost", port=6379, decode_responses=True)
         self.ch = clickhouse_driver.Client(host="localhost", user="default", password="", database = "default")
+        create_all_tables(self.ch)
         self.buffer = []
 
     def ensure_group(self):

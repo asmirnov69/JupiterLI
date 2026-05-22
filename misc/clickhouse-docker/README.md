@@ -12,12 +12,7 @@ build image:
 run container:
 ```
 mkdir ./clickhouse-data # this is location in host system where guest clickhouse will keep its files
-export CH_DATA_DIR=`pwd`/clickhouse-data
-
-podman run -d --name clickhouse \
-    -p 8123:8123 -p 9000:9000 \
-    -v "${CH_DATA_DIR}:/var/lib/clickhouse" \
-    my-clickhouse
+./run.sh # will run container, use podman ps to check that
 ```
 
 access:
