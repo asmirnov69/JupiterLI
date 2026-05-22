@@ -4,6 +4,7 @@ from .redis_utils import RedisLoop
 from .plotter_loop import PlotterLoop
 from .config import load_config
 from rdflib import Graph, URIRef, Namespace
+from clickhouse_driver import Client
 
 TTL_PATH = sys.argv[1] # "examples/producer.ttl"
 PKG_DIR = pathlib.Path(__file__).parent
@@ -11,6 +12,8 @@ PKG_DIR = pathlib.Path(__file__).parent
 class NiceGUIApplication:
     def __init__(self):
         self.g = None
+        self.ch = Client(host="localhost", port=9000, user="default", password="", database="default")
+        self.series_ids_d = {} # key => series_id
 
     def verify_prefixes(self, g:Graph):
         known_prefixes = {
@@ -30,6 +33,13 @@ class NiceGUIApplication:
         if any_errors:
             print("prefix verification failed")
             sys.exit(2)
+
+    def load_series_ids_d(self):
+        rows = self.ch.execute("select series_id, key from series_dets where run_id = '78077f01-d718-49de-88e6-8b4915547c4b'")
+        for r in rows:
+            series_id, key = r
+            self.series_ids_d[series_id] = key
+        print("series_ids_d:", self.series_ids_d)
         
     def load_config_graph(self):
         jli_shacl_ttl_path = os.path.join(PKG_DIR, "ttl/jli-shacl.ttl")
@@ -63,13 +73,14 @@ class NiceGUIApplication:
         ui.run_javascript('location.reload()')        
         
     def launch(self):
-        rl = RedisLoop()
+        rl = RedisLoop(self)
         pl = PlotterLoop(rl)
 
         #ui.button('Clear', on_click=lambda: print('Hello from new button', flush=True)).classes('absolute top-2 left-2 z-50')
         #ui.button('Clear', on_click=lambda: rl.flush()).classes('absolute top-2 left-2 z-50')
         ui.button('Clear', on_click=lambda: self.clear_page(rl)).classes('absolute top-2 left-2 z-50')
 
+        self.load_series_ids_d()
         load_config(self.g, pl)
         
         loop = asyncio.get_event_loop()

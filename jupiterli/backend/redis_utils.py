@@ -1,4 +1,4 @@
-import asyncio
+import asyncio, json
 import redis.asyncio
 import traceback, inspect
 
@@ -8,13 +8,15 @@ class KeySubscriber:
         self.handler = handler
 
 class RedisLoop:
-    def __init__(self):
+    def __init__(self, app):
         self.r = redis.asyncio.from_url("redis://localhost", decode_responses=True)
         self.subscribers = {} # key -> KeySubscriber
-        self.last_ids = {} # key -> last_id
-        self.id_segments = {} # key -> (begin_id, end_id)
+        self.last_id = "$" # we start from new message, old ones are in db
         self.batch_is_done = asyncio.Event()
 
+        self.series_ids_d = app.series_ids_d
+        print(self.series_ids_d)
+        
     async def flush(self):
         await self.r.flushdb()
         
@@ -23,7 +25,6 @@ class RedisLoop:
             return
         new_subscriber = KeySubscriber(message_handler)
         self.subscribers[key] = new_subscriber
-        self.last_ids[key] = "0-0"
 
     async def loop(self):
         try:
@@ -39,11 +40,8 @@ class RedisLoop:
         running_env = True
         while running_env:
             await asyncio.sleep(0.5)
-
-            if len(self.last_ids) == 0:
-                continue
             
-            all_stream_data = await self.r.xread(self.last_ids, block = 0)
+            all_stream_data = await self.r.xread({'telemetry': self.last_id}, block = 0)
 
             print(f"xread returned {len(all_stream_data) if all_stream_data else 0} streams")
             if not all_stream_data:
@@ -51,17 +49,25 @@ class RedisLoop:
 
             for stream_data in all_stream_data:
                 stream_name, stream_items = stream_data
-                key = stream_name
-                subsciber = self.subscribers.get(key)
-                if subsciber is None:
+                if stream_name != 'telemetry':
                     continue
                 l_stream_items = [x for x in stream_items]
-                last_id = l_stream_items[-1][0]
-                self.last_ids[key] = last_id
                 print("len(stream_items):", len(l_stream_items), stream_name)
-                subsciber.buffer.extend([x[1] for x in l_stream_items])
+                self.last_id = l_stream_items[-1][0]
+                #print(l_stream_items)
+                for _, stream_item_data in l_stream_items:                    
+                    stream_item = json.loads(stream_item_data.get('data'))
+                    print(stream_item)
+                    series_id = stream_item.get("series_id")                    
+                    key = self.series_ids_d.get(series_id)
+                    print("KEY:", key, series_id, self.series_ids_d)
+                    subscriber = self.subscribers.get(key)
+                    if subscriber is None:
+                        continue
+                    subscriber.buffer.append(stream_item)
 
             for key, s in self.subscribers.items():
+                print("key", key, s.buffer)
                 s.handler(key, s.buffer)
                 s.buffer = []
 
