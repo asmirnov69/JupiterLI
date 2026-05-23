@@ -21,7 +21,10 @@ def save_run_dets():
     host = socket.gethostname()
     pid = os.getpid()
     print(f"process {pid}@{host} starting with run_id {run_id}")
-    msg = {"run_id": run_id, "created_ts": time.time(), "host": host, "pid": pid, "argv0": sys.executable, "args": " ".join(sys.argv)}
+    run_label = os.environ.get("RUN_LABEL")
+    if run_label is None:
+        run_label = os.environ.get("RL")        
+    msg = {"run_id": run_id, "created_ts": time.time(), "host": host, "pid": pid, "argv0": sys.executable, "args": " ".join(sys.argv), "run_label": run_label}
     print("<<< msg:", msg)
     msg_response = _send_with_response("runs_dets", msg)
     print(">>> msg_response:", msg_response)

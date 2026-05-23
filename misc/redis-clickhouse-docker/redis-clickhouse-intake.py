@@ -17,7 +17,7 @@ def create_all_tables(ch):
     CREATE TABLE IF NOT EXISTS runs_dets (
     run_id String,
     created_ts Float64, host String, pid Int64,
-    argv0 String, args String
+    argv0 String, args String, run_label Nullable(String)
     ) ENGINE = MergeTree ORDER BY (run_id)
     """)
     
@@ -44,7 +44,6 @@ def create_all_tables(ch):
 
 
 class StreamToClickHouse:
-
     def __init__(self):
         self.r = redis.Redis(host="localhost", port=6379, decode_responses=True)
         self.ch = clickhouse_driver.Client(host="localhost", user="default", password="", database = "default")

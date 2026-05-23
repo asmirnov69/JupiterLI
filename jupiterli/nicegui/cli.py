@@ -37,9 +37,9 @@ class NiceGUIApplication:
 
     def load_series_ids_d(self, run_id):
         if run_id is None:
-            rows = self.ch.execute("select run_id from runs_dets where created_ts = (select max(created_ts) from runs_dets)")
+            rows = self.ch.execute("select run_id, run_label from runs_dets where created_ts = (select max(created_ts) from runs_dets)")
             if len(rows) == 1:
-                run_id = rows[0][0]
+                run_id, run_label = rows[0]
             else:
                 raise Exception("can't find latest run_id")
         ui.page_title(f"run_id={run_id}")
@@ -48,6 +48,7 @@ class NiceGUIApplication:
             series_id, key = r
             self.series_ids_d[series_id] = key
         print("series_ids_d:", self.series_ids_d)
+        return run_label
         
     def load_config_graph(self):
         jli_shacl_ttl_path = os.path.join(PKG_DIR, "ttl/jli-shacl.ttl")
@@ -76,20 +77,13 @@ class NiceGUIApplication:
         self.g.parse(jli_shacl_ttl_path, format = "turtle")
         self.g.parse(TTL_PATH, format = "turtle")
 
-    async def clear_page(self, rl):
-        await rl.flush()
-        ui.run_javascript('location.reload()')        
-        
     def launch(self, request:Request):
         run_id = request.query_params.get('run_id')
         rl = RedisLoop(self)
         pl = PlotterLoop(rl)
 
-        #ui.button('Clear', on_click=lambda: print('Hello from new button', flush=True)).classes('absolute top-2 left-2 z-50')
-        #ui.button('Clear', on_click=lambda: rl.flush()).classes('absolute top-2 left-2 z-50')
-        ui.button('Clear', on_click=lambda: self.clear_page(rl)).classes('absolute top-2 left-2 z-50')
-
-        self.load_series_ids_d(run_id)
+        run_label = self.load_series_ids_d(run_id)
+        ui.label(f"run label: {run_label}").classes('absolute top-2 left-2 z-50')
         load_config(self.g, pl)
         
         loop = asyncio.get_event_loop()

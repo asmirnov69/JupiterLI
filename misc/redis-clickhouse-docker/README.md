@@ -17,12 +17,12 @@ mkdir ./clickhouse-data # this is location in host system where guest clickhouse
 
 access:
 ```
-podman exec -it clickhouse clickhouse-client # using default user with no password
+podman exec -it redis-clickhouse clickhouse-client # using default user with no password
 ```
 
 DEBUGGING:
 
 bash run without launch of specified in Dockerfile entry point:
 ```
-podman run --rm -it --entrypoint bash my-clickhouse
+podman run --rm -it --entrypoint bash my-redis-clickhouse
 ```
