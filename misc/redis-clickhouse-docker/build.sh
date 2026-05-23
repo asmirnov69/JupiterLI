@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-sudo rm -rf clickhouse-data
+rm -rf clickhouse-data
 mkdir clickhouse-data
 rm -rf docker-logs
 mkdir docker-logs
-podman build -t my-redis-clickhouse .
+podman build --build-arg CURR_UID=$(id -u) --build-arg CURR_GID=$(id -g) -t my-redis-clickhouse .
