@@ -25,6 +25,7 @@ podman run --rm -d \
        -p 8123:8123 \
        -p 9000:9000 \
        -p 6379:6379 \
+       -p 5173:5173 \
        -v "$PWD/clickhouse-data:/var/lib/clickhouse:Z" \
        -v "$PWD/docker-logs:/logs:Z" \
          my-redis-clickhouse
