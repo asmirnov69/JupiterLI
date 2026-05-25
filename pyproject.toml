@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jupiterli"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
+    "click", "podman",
     "redis", "clickhouse-driver",
     "nicegui",
     "plotly",
@@ -15,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 jupiterli-nicegui = "jupiterli.nicegui.cli:main" # nicegui backend
+jupiterli-podman = "jupiterli.podman.cli:main" # jupiterli backend
 
 [tool.setuptools.packages.find]
 include = ["jupiterli*"]
@@ -23,4 +25,4 @@ include = ["jupiterli*"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-jupiterli = ["backend/ttl/*.ttl"]
+jupiterli = ["nicegui/ttl/*.ttl", "podman/docker/*"]
