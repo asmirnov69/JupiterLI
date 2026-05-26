@@ -22,11 +22,11 @@ done
 echo "clickhouse is ready"
 
 echo "running JupiterLI-browser backend"
-cd /host-user-apps/JupiterLi-browser/backend
+cd /host-user-apps/JupiterLI-browser/backend
 venv/bin/uvicorn app.main:app --reload >& /logs/backend.logs &
 
-cd ../frontend
-NO_COLOR=1 FORCE_COLOR=0 npm run dev  < /dev/null >& /logs/frontend.log &
+echo "running JupiterLI-browser frontend"
+venv/bin/uvicorn simple_website:app --host 0.0.0.0 --port 5173 >& /logs/simple_website.log &
 
 sleep 3
 
