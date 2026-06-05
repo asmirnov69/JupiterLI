@@ -31,6 +31,16 @@ def handle_proceed_yn(proceed):
             sys.exit(2)
 
 @app.command()
+def verify():
+    """verify local system as suitable for jupiterli-podman server"""
+    podman_utils.podman_verify()
+    
+@app.command()
+def status():
+    """Shows jupiterli-podman status and related information"""
+    podman_utils.podman_status()
+            
+@app.command()
 def init(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands"),
          proceed: bool = typer.Option(False, "--yes", "-y", help = "will answer yes to proceed with command execution"),
          force_data_dir_creation: bool = typer.Option(False, "--force", "-f", help = "will force creation of new data dir, will remove old data"),
@@ -65,9 +75,9 @@ def init(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't s
     clickhouse_dir = os.path.join(data_dir, "clickhouse-data")
     log_dir = os.path.join(data_dir, "docker-logs")
     
-    podman_utils.podman_build(quiet_mode, os.path.join(PKG_DIR, "docker"), jli_image_name, os.path.join(PKG_DIR, "docker/Dockerfile"))
+    podman_utils.podman_build(quiet_mode, os.path.join(PKG_DIR, "docker"), jli_image_name, os.path.join(PKG_DIR, "docker/Dockerfile"), data_dir)
     jli_container_id = podman_utils.podman_create(quiet_mode = quiet_mode, image = jli_image_name,
-                                                  name = jli_container_name,
+                                                  name = jli_container_name, labels = [("datadir", data_dir), ("browser-port", 5173)],
                                                   ports = [(8123, 8123), (9000, 9000), (6379, 6379), (5173, 5173)],
                                                   volumes = [(clickhouse_dir, "/var/lib/clickhouse"), (log_dir, "/logs")],
                                                   env = {"HOME": "/host-user-apps"})
@@ -82,29 +92,16 @@ def cleanup(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don'
     podman_utils.podman_cleanup(quiet_mode)
     
 @app.command()
-def start(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands"),
-          proceed: bool = typer.Option(False, "--yes", "-y", help = "will answer yes to proceed with command execution")):
+def start(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands")):
     """Start JupiterLI services"""
     print("Starting JupiterLI...")
-
-    handle_proceed_yn(proceed)
-
     podman_utils.podman_start(quiet_mode)
 
 @app.command()
-def stop(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands"),
-         proceed: bool = typer.Option(False, "--yes", "-y", help = "will answer yes to proceed with command execution")):
+def stop(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands")):
     """Stop JupiterLI services"""
     print("Stopping JupiterLI...")
-
-    handle_proceed_yn(proceed)
-
     podman_utils.podman_stop(quiet_mode)
-
-@app.command()
-def info():
-    """Shows jupiterli-podman related information"""
-    pass
 
 def main():
     app()

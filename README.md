@@ -13,21 +13,34 @@ JupiterLI python package provides CLI to create and manage podman container wher
 
 ## Install JupiterLI
 
+First make sure podman is installed on your system
+
 ```bash
+apt install podman
+```
+
+pip install JupiterLI from github repo:
+
+```bash
+python3 -m venv <venv-dir-of-your-choice>
+source <venv-dir-of-your-choice>/bin/activate
 pip install git+https://github.com/asmirnov69/JupiterLI
 ```
 
 ## Run the example
 
 ```bash
+source <venv-dir-of-your-choice>/bin/activate
+jupiterli-podman verify # should print version of podman
 jupiterli-podman init --data-dir <local dir for jupiterli podman container>
 jupiterli-podman start
+jupiterli-podman status
 ```
 
 In one terminal, start the data producer (publishes random values to Redis every 2.5s):
 ```bash
+source <venv-dir-of-your-choice>/bin/activate
 python examples/producer.py
 ```
 
 Then open http://localhost:5173 in your browser.
-

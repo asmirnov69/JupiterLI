@@ -2,26 +2,50 @@ import subprocess
 import sys, os
 import shlex, json
 
-def show_stdout(process, return_last_line = True):
+def show_stdout(process, additional_out = None, return_last_line = True):
     # Stream output live, returns last line
     last_line = None
 
     for line in process.stdout:
-        print(line, end="")
-        sys.stdout.flush()
+        if additional_out is None:
+            print(line, end="")
+            sys.stdout.flush()
+        else:
+            print(".", end="", file = sys.stderr); sys.stderr.flush()
+            print(line, end="", file = additional_out)
 
         if return_last_line:
             if line.strip():
                 last_line = line.strip()
 
     return last_line
-    
 
-def podman_build(quiet_mode, context_dir, image_name, dockerfile):
+def podman_verify():
+    cmd = "podman --version"
+    process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,)
+    image_id = show_stdout(process)
+    return_code = process.wait()
+
+    if return_code != 0:
+        raise RuntimeError(f"podman --version  failed with exit code {return_code}")
+
+def podman_status():
+    cmds = []
+    cmds.append(("status", "podman inspect -f '{{ index .State.Status }}' jupiterli"))
+    cmds.append(("image", "podman inspect -f '{{ index .RepoTags }} ' jupiterli-image"))
+    cmds.append(("datadir", "podman inspect -f '{{ index .Config.Labels \"datadir\" }}' jupiterli"))
+    cmds.append(("browser-port", "podman inspect -f '{{ index .Config.Labels \"browser-port\" }}' jupiterli"))
+    for l, cmd in cmds:
+        print(l, end = ': ')
+        process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,)
+        show_stdout(process)
+    
+def podman_build(quiet_mode, context_dir, image_name, dockerfile, data_dir):
     tag = image_name
+    curr_uid = os.getuid(); curr_gid = os.getgid()
+
     cmd = []
     cmd.extend(["podman", "build"])
-    curr_uid = os.getuid(); curr_gid = os.getgid()
     cmd.extend(["--build-arg", f"CURR_UID={curr_uid}", "--build-arg", f"CURR_GID={curr_gid}"])
     cmd.extend(["-t", tag, "-f", dockerfile, context_dir])
 
@@ -29,7 +53,10 @@ def podman_build(quiet_mode, context_dir, image_name, dockerfile):
         print("podman_build::", " ".join(cmd))
 
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,)
-    image_id = show_stdout(process)
+    build_log_fn = os.path.join(data_dir, "podman-build.txt")
+    print(f"podman build log: {build_log_fn}")
+    with open(build_log_fn, "w") as build_log:
+        image_id = show_stdout(process, build_log)
     return_code = process.wait()
 
     if return_code != 0:
@@ -38,7 +65,7 @@ def podman_build(quiet_mode, context_dir, image_name, dockerfile):
     print()
     print("Build completed successfully, image_id:", image_id)
 
-def podman_create(quiet_mode, image, name, ports, volumes, env, command = None):
+def podman_create(quiet_mode, image, name, labels: list[tuple[str, str]], ports, volumes, env, command = None):
     """
     Create podman container.
 
@@ -69,6 +96,9 @@ def podman_create(quiet_mode, image, name, ports, volumes, env, command = None):
     if name:
         cmd += ["--name", name]
 
+    for label_key, label_value in labels:
+        cmd += ["--label", f'{label_key}={label_value}']
+    
     # additional options to match users
     cmd += ["--userns", "keep-id"]
     curr_uid = os.getuid(); curr_gid = os.getgid()
@@ -108,7 +138,6 @@ def podman_create(quiet_mode, image, name, ports, volumes, env, command = None):
             f"podman create failed with exit code {return_code}"
         )
 
-    print()
     print("Container created successfully, container_id:", container_id)
 
     return container_id
@@ -125,17 +154,7 @@ def podman_cleanup(quiet_mode):
         return
         
     # remove image
-    cmd = shlex.split("podman images --filter label=label=jupiterli-image --format json")
-    if not quiet_mode:
-        print("podman_cleanup::", " ".join(cmd))
-
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    out_j = json.loads(result.stdout)
-    jupiterli_image_id = out_j[0]['Id']
-    print("check_jupiterli_image:", jupiterli_image_id)
-
-    cmd = ["podman", "image", "rm"]
-    cmd.append(jupiterli_image_id)
+    cmd = ["podman", "image", "rm", "jupiterli-image"]
     if not quiet_mode:
         print("podman_cleanup:", " ".join(cmd))
         
