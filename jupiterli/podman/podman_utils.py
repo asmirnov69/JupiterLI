@@ -17,7 +17,7 @@ def show_stdout(process, return_last_line = True):
     return last_line
     
 
-def podman_build(dry_run, context_dir, image_name, dockerfile):
+def podman_build(quiet_mode, context_dir, image_name, dockerfile):
     tag = image_name
     cmd = []
     cmd.extend(["podman", "build"])
@@ -25,11 +25,9 @@ def podman_build(dry_run, context_dir, image_name, dockerfile):
     cmd.extend(["--build-arg", f"CURR_UID={curr_uid}", "--build-arg", f"CURR_GID={curr_gid}"])
     cmd.extend(["-t", tag, "-f", dockerfile, context_dir])
 
-    if dry_run == True:
-        print("dry_run podman_build:", " ".join(cmd))
-        return
-    
-    print()
+    if not quiet_mode:
+        print("podman_build::", " ".join(cmd))
+
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,)
     image_id = show_stdout(process)
     return_code = process.wait()
@@ -40,7 +38,7 @@ def podman_build(dry_run, context_dir, image_name, dockerfile):
     print()
     print("Build completed successfully, image_id:", image_id)
 
-def podman_create(dry_run, image, name, ports, volumes, env, command = None):
+def podman_create(quiet_mode, image, name, ports, volumes, env, command = None):
     """
     Create podman container.
 
@@ -98,11 +96,9 @@ def podman_create(dry_run, image, name, ports, volumes, env, command = None):
     if command:
         cmd.extend(command)
 
-    if dry_run == True:
-        print("dry_run podman_create:", " ".join(cmd))
-        return
+    if not quiet_mode:
+        print("podman_create::", " ".join(cmd))
 
-    print()
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,)
     container_id = show_stdout(process)
     return_code = process.wait()
@@ -117,57 +113,56 @@ def podman_create(dry_run, image, name, ports, volumes, env, command = None):
 
     return container_id
 
-def podman_cleanup(dry_run):
+def podman_cleanup(quiet_mode):
     # remove container first
     cmd = shlex.split("podman rm -f jupiterli")
-    if dry_run == True:
-        print("dry_run podman_jupiterli_cleanup:", " ".join(cmd))
-    else:
-        print("podman_jupiterli_cleanup:", " ".join(cmd))
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            print("failed:", result.stderr)
-            return
+    if not quiet_mode:
+        print("podman_cleanup::", " ".join(cmd))
+    
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print("failed:", result.stderr)
+        return
         
     # remove image
     cmd = shlex.split("podman images --filter label=label=jupiterli-image --format json")
-    if dry_run == True:
-        print("dry_run podman_jupiterli_cleanup:", " ".join(cmd))
-    else:
-        print("podman_jupiterli_cleanup:", " ".join(cmd))
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        out_j = json.loads(result.stdout)
-        jupiterli_image_id = out_j[0]['Id']
-        print("check_jupiterli_image:", jupiterli_image_id)
+    if not quiet_mode:
+        print("podman_cleanup::", " ".join(cmd))
 
-        cmd = ["podman", "image", "rm"]
-        cmd.append(jupiterli_image_id)
-        print("podman_jupiterli_cleanup:", " ".join(cmd))
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            print("failed:", result.stderr)
-        print("all done")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    out_j = json.loads(result.stdout)
+    jupiterli_image_id = out_j[0]['Id']
+    print("check_jupiterli_image:", jupiterli_image_id)
 
-def podman_start(dry_run):
+    cmd = ["podman", "image", "rm"]
+    cmd.append(jupiterli_image_id)
+    if not quiet_mode:
+        print("podman_cleanup:", " ".join(cmd))
+        
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print("failed:", result.stderr)
+
+    print("all done")
+
+def podman_start(quiet_mode):
     cmd = "podman start jupiterli"
-    if dry_run:
-        print("dry run podman_start:", cmd)
-    else:
-        print("podman_start:", cmd)
-        result = subprocess.run(shlex.split(cmd), capture_output=True, text=True)
-        if result.returncode != 0:
-            print("failed:", result.stderr)
-        print("all done")
+    if not quiet_mode:
+        print("podman_start::", cmd)
 
-def podman_stop(dry_run):
+    result = subprocess.run(shlex.split(cmd), capture_output=True, text=True)
+    if result.returncode != 0:
+        print("failed:", result.stderr)
+    print("all done")
+
+def podman_stop(quiet_mode):
     cmd = "podman stop jupiterli"
-    if dry_run:
-        print("dry run podman_stop:", cmd)
-    else:
-        print("podman_stop:", cmd)
-        result = subprocess.run(shlex.split(cmd), capture_output=True, text=True)
-        if result.returncode != 0:
-            print("failed:", result.stderr)
-        print("all done")
+    if not quiet_mode:
+        print("podman_stop::", cmd)
+        
+    result = subprocess.run(shlex.split(cmd), capture_output=True, text=True)
+    if result.returncode != 0:
+        print("failed:", result.stderr)
+    print("all done")
 
         

@@ -1,127 +1,110 @@
 #!/usr/bin/env python3
-import click, sys, os.path, pathlib
+import typer
+import sys, os.path, pathlib, shutil
 from . import podman_utils
+
+app = typer.Typer(add_completion=False,
+                  pretty_exceptions_enable=False,  # disables Rich tracebacks
+                  rich_markup_mode=None,           # disables Rich markup parsing
+                  context_settings={"color": False, "help_option_names": ["-h", "--help"]}
+                  )
 
 PKG_DIR = pathlib.Path(__file__).parent
 
-@click.group()
-def cli():
-    """JupiterLI command line interface."""
-    pass
+def print_line(quiet_mode, s):
+    if quiet_mode == False:
+        print(s)
 
-# -----------------------------------------------------------------------------
-# init
-# -----------------------------------------------------------------------------
+def print_error(s):
+    print("PROBLEM:", s)    
+    
+def handle_proceed_yn(proceed):
+    if proceed == False:
+        yn = input("proceed: [y/N] ").strip()
+        #print(f"yn: '{yn}'")
+        yn = yn if yn != "" else "n"
+        print("yn:", yn)
+        if yn.lower() in ["y", "yes"]:
+            return
+        else:
+            print("aborted by user")
+            sys.exit(2)
 
-@cli.command()
-@click.option("--dry-run", "dry_run", flag_value = "do_dry_run")
-@click.option("--data-dir", required=True, type=click.Path(), help="Directory where JupiterLI data will be stored.")
-def init(dry_run, data_dir):
-    """Initialize JupiterLI project."""
-    click.echo("Initializing JupiterLI...")
-    print("jupiterli will place all its files into location:", data_dir, dry_run)
+@app.command()
+def init(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands"),
+         proceed: bool = typer.Option(False, "--yes", "-y", help = "will answer yes to proceed with command execution"),
+         force_data_dir_creation: bool = typer.Option(False, "--force", "-f", help = "will force creation of new data dir, will remove old data"),
+         data_dir: str = typer.Option(..., "--data-dir", help = "jupiterli-podman container directory to store data and logs")):
+    """Initialize JupiterLI project"""
+    print_line(quiet_mode, "Initializing JupiterLI...")
+    
+    if data_dir is None:
+        print_error("data_dir is not specified, giving up...")
+        return
 
-    dry_run = dry_run == "do_dry_run"
+    print_line(quiet_mode, f"jupiterli will place all its files into location: {data_dir}")
+    handle_proceed_yn(proceed)
 
     data_dir = os.path.realpath(data_dir)
     if os.path.exists(data_dir):
-        print(f"data dir exists: {data_dir}, giving up...")
-        sys.exit(3)
+        if force_data_dir_creation == False:
+            print_error(f"data dir exists: {data_dir}, giving up...")
+            sys.exit(3)
+        else:
+            print_line(quiet_mode, f"forced to remove existing data_dir: {data_dir}")
+            handle_proceed_yn(proceed)
+            shutil.rmtree(data_dir)
 
     for t_dir in ["clickhouse-data", "docker-logs"]:
         target_dir = os.path.join(data_dir, t_dir)
-        if not dry_run:
-            print("making dir:", target_dir)
-            os.makedirs(target_dir)
-        else:
-            print("will be making dir:", target_dir)
+        print_line(quiet_mode, f"making dir: {target_dir}")
+        os.makedirs(target_dir)
         
     jli_image_name = "jupiterli-image"
     jli_container_name = "jupiterli"
     clickhouse_dir = os.path.join(data_dir, "clickhouse-data")
     log_dir = os.path.join(data_dir, "docker-logs")
     
-    podman_utils.podman_build(dry_run, os.path.join(PKG_DIR, "docker"), jli_image_name, os.path.join(PKG_DIR, "docker/Dockerfile"))
-    jli_container_id = podman_utils.podman_create(dry_run = dry_run, image = jli_image_name,
+    podman_utils.podman_build(quiet_mode, os.path.join(PKG_DIR, "docker"), jli_image_name, os.path.join(PKG_DIR, "docker/Dockerfile"))
+    jli_container_id = podman_utils.podman_create(quiet_mode = quiet_mode, image = jli_image_name,
                                                   name = jli_container_name,
                                                   ports = [(8123, 8123), (9000, 9000), (6379, 6379), (5173, 5173)],
                                                   volumes = [(clickhouse_dir, "/var/lib/clickhouse"), (log_dir, "/logs")],
                                                   env = {"HOME": "/host-user-apps"})
-    print("jli_container_id:", jli_container_id)
+    print_line(quiet_mode, f"jli_container_id: {jli_container_id}")
 
-@cli.command()
-@click.option("--dry-run", "dry_run", flag_value = "do_dry_run")
-def cleanup(dry_run):
-    dry_run = dry_run == "do_dry_run"
-    podman_utils.podman_cleanup(dry_run)
+@app.command()
+def cleanup(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands"),
+            proceed: bool = typer.Option(False, "--yes", "-y", help = "will answer yes to proceed with command execution")):
+    """Removing data-dir and podman image/container used by jupiterli"""
+
+    handle_proceed_yn(proceed)
+    podman_utils.podman_cleanup(quiet_mode)
     
-    
-# -----------------------------------------------------------------------------
-# start / stop
-# -----------------------------------------------------------------------------
+@app.command()
+def start(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands"),
+          proceed: bool = typer.Option(False, "--yes", "-y", help = "will answer yes to proceed with command execution")):
+    """Start JupiterLI services"""
+    print("Starting JupiterLI...")
 
-@cli.command()
-@click.option("--dry-run", "dry_run", flag_value = "do_dry_run")
-def start(dry_run):
-    """Start JupiterLI services."""
-    click.echo("Starting JupiterLI...")
-    dry_run = dry_run == "do_dry_run"
-    podman_utils.podman_start(dry_run)
+    handle_proceed_yn(proceed)
 
-@cli.command()
-@click.option("--dry-run", "dry_run", flag_value = "do_dry_run")
-def stop(dry_run):
-    """Stop JupiterLI services."""
-    click.echo("Stopping JupiterLI...")
-    dry_run = dry_run == "do_dry_run"
-    podman_utils.podman_stop(dry_run)
+    podman_utils.podman_start(quiet_mode)
 
+@app.command()
+def stop(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't show podman commands"),
+         proceed: bool = typer.Option(False, "--yes", "-y", help = "will answer yes to proceed with command execution")):
+    """Stop JupiterLI services"""
+    print("Stopping JupiterLI...")
 
-# -----------------------------------------------------------------------------
-# browser group
-# -----------------------------------------------------------------------------
+    handle_proceed_yn(proceed)
 
-@cli.group()
-def browser():
-    """Browser-related commands."""
+    podman_utils.podman_stop(quiet_mode)
+
+@app.command()
+def info():
+    """Shows jupiterli-podman related information"""
     pass
 
-
-# -----------------------------------------------------------------------------
-# browser start
-# -----------------------------------------------------------------------------
-
-@browser.command("start")
-@click.option("--all", "mode", flag_value="all", help="Start all browser components.",)
-@click.option("--frontend", "mode", flag_value="frontend", help="Start frontend browser component.",)
-@click.option("--backend", "mode", flag_value="backend", help="Start backend browser component.",)
-def browser_start(mode):
-    """
-    Start browser services.
-    """
-
-    if mode is None:
-        raise click.UsageError(
-            "Specify one of: --all, --frontend, or --backend"
-        )
-
-    click.echo(f"Starting browser mode: {mode}")
-
-
-# -----------------------------------------------------------------------------
-# browser stop
-# -----------------------------------------------------------------------------
-
-@browser.command("stop")
-def browser_stop():
-    """Stop browser services."""
-    click.echo("Stopping browser services...")
-
-
-# -----------------------------------------------------------------------------
-
 def main():
-    cli()
-
-if __name__ == "__main__":
-    main()
+    app()

@@ -2,26 +2,14 @@
 
 JupiterLI - named after small Jupiter moon [Jupiter LI](https://en.wikipedia.org/wiki/Jupiter_LI)
 
-Real-time data visualization dashboard powered by Redis Streams and NiceGUI. Data producers publish to Redis Streams; the browser dashboard updates live as new data arrives.
+Real-time telemetry data visualization dashboard. Data to be shown can be produced by any python code, see examples/producer.py. Resulting timeseries will be observable via JupiterLI-browser webapp.
 
-## Install Redis
+Python package JupiterLI provides API to allow reporting values to remote application to provide measurements. 
 
-**Ubuntu/Debian:**
-```bash
-sudo apt install redis
-sudo systemctl start redis
-```
+The way how API implemented is Redis stream which is populated by API call of client library. The data intake server (redis-clickhouse-intake.py) inserts data from Redis stream listening end into clickhouse database.
+JUpiterLI-browser is web-based application. Python Flask backend has access to both Redis streams and clieckhouse database. Typescript frontend provides time-series view of collected telemetry data.
 
-**macOS:**
-```bash
-brew install redis
-brew services start redis
-```
-
-**Docker:**
-```bash
-docker run -p 6379:6379 redis
-```
+JupiterLI python package provides CLI to create and manage podman container where three components are configured and running: Redis server, clickhouse database server and JupiterLI-browser backend. JupiterLI-browser frontend webapp can be used via browser.
 
 ## Install JupiterLI
 
@@ -31,15 +19,15 @@ pip install git+https://github.com/asmirnov69/JupiterLI
 
 ## Run the example
 
+```bash
+jupiterli-podman init --data-dir <local dir for jupiterli podman container>
+jupiterli-podman start
+```
+
 In one terminal, start the data producer (publishes random values to Redis every 2.5s):
 ```bash
 python examples/producer.py
 ```
 
-In another terminal, start the dashboard:
-```bash
-jupiterli-backend examples/producer.ttl
-```
-
-Then open http://localhost:8080 in your browser. If you know run_id use: http://localhost:8080/?run_id=<run_id>
+Then open http://localhost:5173 in your browser.
 
