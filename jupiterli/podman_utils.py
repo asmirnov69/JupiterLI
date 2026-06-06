@@ -12,7 +12,7 @@ def show_stdout(process, additional_out = None, return_last_line = True):
             sys.stdout.flush()
         else:
             print(".", end="", file = sys.stderr); sys.stderr.flush()
-            print(line, end="", file = additional_out)
+            print(line, end="", file = additional_out); additional_out.flush()
 
         if return_last_line:
             if line.strip():

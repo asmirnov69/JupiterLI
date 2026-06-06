@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jupiterli"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
     "typer",
     "redis", "clickhouse-driver",
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-jupiterli-podman = "jupiterli.podman.cli:main" # jupiterli backend
+jupiterli = "jupiterli.cli:main" # jupiterli backend
 
 [tool.setuptools.packages.find]
 include = ["jupiterli*"]
@@ -21,4 +21,4 @@ include = ["jupiterli*"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-jupiterli = ["podman/docker/*"]
+jupiterli = ["docker/*"]

@@ -27,7 +27,7 @@ source <venv-dir-of-your-choice>/bin/activate
 pip install git+https://github.com/asmirnov69/JupiterLI
 ```
 
-## Run the example
+## Run JupiterLI
 
 ```bash
 source <venv-dir-of-your-choice>/bin/activate
@@ -37,10 +37,27 @@ jupiterli-podman start
 jupiterli-podman status
 ```
 
+JupipterLI is now ready to accept telemetry information. It should be observable on JupiterLI-browser webapp which is running on the same host port 5173.
+To access that open http://localhost:5173 in your browser.
+
+## Run example
+
 In one terminal, start the data producer (publishes random values to Redis every 2.5s):
 ```bash
 source <venv-dir-of-your-choice>/bin/activate
+pip install git+https://github.com/asmirnov69/libJupiterLI
 python examples/producer.py
 ```
 
-Then open http://localhost:5173 in your browser.
+# podman reset
+
+```
+systemctl --user stop podman.socket
+systemctl --user stop podman.service
+
+rm -rf ~/.local/share/containers
+rm -rf ~/.config/containers
+rm -rf ~/.cache/containers
+
+podman system reset -f
+```
