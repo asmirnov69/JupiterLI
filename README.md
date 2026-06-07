@@ -51,6 +51,12 @@ python examples/producer.py
 
 # podman reset
 
+Usual command to reset podman:
+```
+podman system reset -f
+```
+
+In the case of errors this command sequence should help to fix errors.
 ```
 systemctl --user stop podman.socket
 systemctl --user stop podman.service
