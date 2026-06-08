@@ -31,10 +31,10 @@ pip install git+https://github.com/asmirnov69/JupiterLI
 
 ```bash
 source <venv-dir-of-your-choice>/bin/activate
-jupiterli-podman verify # should print version of podman
-jupiterli-podman init --data-dir <local dir for jupiterli podman container>
-jupiterli-podman start
-jupiterli-podman status
+jupiterli verify # should print version of podman
+jupiterli init --data-dir <local dir for jupiterli podman container>
+jupiterli start
+jupiterli status
 ```
 
 JupipterLI is now ready to accept telemetry information. It should be observable on JupiterLI-browser webapp which is running on the same host port 5173.

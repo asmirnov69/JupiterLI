@@ -6,7 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "jupiterli"
 version = "0.3.0"
 dependencies = [
-    "typer",
+   "typer",
+   "redis", "clickhouse-driver",
+   "rdflib", "pyshacl",
 ]
 
 [project.scripts]
