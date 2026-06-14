@@ -65,21 +65,21 @@ def init(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't s
             handle_proceed_yn(proceed)
             shutil.rmtree(data_dir)
 
-    for t_dir in ["clickhouse-data", "docker-logs"]:
+    for t_dir in ["sqlite3-data", "docker-logs"]:
         target_dir = os.path.join(data_dir, t_dir)
         print_line(quiet_mode, f"making dir: {target_dir}")
         os.makedirs(target_dir)
         
     jli_image_name = "jupiterli-image"
     jli_container_name = "jupiterli"
-    clickhouse_dir = os.path.join(data_dir, "clickhouse-data")
+    sqlite3_dir = os.path.join(data_dir, "sqlite3-data")
     log_dir = os.path.join(data_dir, "docker-logs")
     
     podman_utils.podman_build(quiet_mode, os.path.join(PKG_DIR, "docker"), jli_image_name, os.path.join(PKG_DIR, "docker/Dockerfile"), data_dir)
     jli_container_id = podman_utils.podman_create(quiet_mode = quiet_mode, image = jli_image_name,
                                                   name = jli_container_name, labels = [("datadir", data_dir), ("browser-port", 5173)],
-                                                  ports = [(8123, 8123), (9000, 9000), (6379, 6379), (5173, 5173)],
-                                                  volumes = [(clickhouse_dir, "/var/lib/clickhouse"), (log_dir, "/logs")],
+                                                  ports = [(6379, 6379), (5173, 5173)],
+                                                  volumes = [(sqlite3_dir, "/sqlite3-data"), (log_dir, "/logs")],
                                                   env = {"HOME": "/host-user-apps"})
     print_line(quiet_mode, f"jli_container_id: {jli_container_id}")
 

@@ -61,7 +61,7 @@ In the case of errors this command sequence should help to fix errors.
 systemctl --user stop podman.socket
 systemctl --user stop podman.service
 
-rm -rf ~/.local/share/containers
+sudo rm -rf ~/.local/share/containers
 rm -rf ~/.config/containers
 rm -rf ~/.cache/containers
 

@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jupiterli"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
    "typer",
-   "redis", "clickhouse-driver",
+   "redis",
    "rdflib", "pyshacl",
 ]
 
