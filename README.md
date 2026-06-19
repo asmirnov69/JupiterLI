@@ -16,25 +16,25 @@ JupiterLI python package provides CLI to create and manage podman container wher
 First make sure podman is installed on your system
 
 ```bash
-apt install podman
+% apt install podman
 ```
 
 pip install JupiterLI from github repo:
 
 ```bash
-python3 -m venv <venv-dir-of-your-choice>
-source <venv-dir-of-your-choice>/bin/activate
-pip install git+https://github.com/asmirnov69/JupiterLI
+% python3 -m venv jupiterli-venv
+% source jupiterli-venv
+(jupiterli-venv) % pip install git+https://github.com/asmirnov69/JupiterLI
 ```
 
 ## Run JupiterLI
 
 ```bash
-source <venv-dir-of-your-choice>/bin/activate
-jupiterli verify # should print version of podman
-jupiterli init --data-dir <local dir for jupiterli podman container>
-jupiterli start
-jupiterli status
+% source jupiterli-venv/bin/activate
+(jupiterli-venv) % jupiterli verify # should print version of podman
+(jupiterli-venv) % jupiterli init --data-dir <local dir for jupiterli podman container>
+(jupiterli-venv) % jupiterli start
+(jupiterli-venv) % jupiterli status
 ```
 
 JupipterLI is now ready to accept telemetry information. It should be observable on JupiterLI-browser webapp which is running on the same host port 5173.
@@ -44,26 +44,25 @@ To access that open http://localhost:5173 in your browser.
 
 In one terminal, start the data producer (publishes random values to Redis every 2.5s):
 ```bash
-source <venv-dir-of-your-choice>/bin/activate
-pip install git+https://github.com/asmirnov69/libJupiterLI
-python examples/producer.py
+% source jupipterli-venv
+(jupiterli-venv) % python examples/producer.py
 ```
 
 # podman reset
 
 Usual command to reset podman:
 ```
-podman system reset -f
+% podman system reset -f
 ```
 
 In the case of errors this command sequence should help to fix errors.
 ```
-systemctl --user stop podman.socket
-systemctl --user stop podman.service
+% systemctl --user stop podman.socket
+% systemctl --user stop podman.service
 
-sudo rm -rf ~/.local/share/containers
-rm -rf ~/.config/containers
-rm -rf ~/.cache/containers
+% sudo rm -rf ~/.local/share/containers
+% rm -rf ~/.config/containers
+% rm -rf ~/.cache/containers
 
-podman system reset -f
+% podman system reset -f
 ```

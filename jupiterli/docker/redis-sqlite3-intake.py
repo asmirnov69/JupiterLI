@@ -40,6 +40,11 @@ def create_all_tables(ch):
     )
     """)
 
+    qs.append("""
+    CREATE INDEX IF NOT EXISTS idx_series_sid_serial
+    ON series(series_id, run_serial_num)
+    """)
+    
     for q in qs:
         print(q)
         ch.execute(q)
@@ -48,7 +53,16 @@ class StreamToSqlite3:
     def __init__(self, sqlite3_db_fn):
         self.r = redis.Redis(host="localhost", port=6379, decode_responses=True)
         self.ch = sqlite3.connect(sqlite3_db_fn)
+        self.ch.execute("PRAGMA journal_mode=WAL")
+        self.ch.execute("PRAGMA synchronous=NORMAL")
+        self.ch.commit()        
         create_all_tables(self.ch)
+        if 1: # verify WAL settings
+            mode = self.ch.execute("PRAGMA journal_mode").fetchone()[0]
+            sync = self.ch.execute("PRAGMA synchronous").fetchone()[0]
+            print("journal_mode =", mode)
+            print("synchronous =", sync)
+            
         self.buffer = []
 
     def ensure_group(self):
