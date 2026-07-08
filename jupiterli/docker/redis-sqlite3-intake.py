@@ -2,6 +2,7 @@ import sys
 import time
 import redis, json
 import sqlite3
+from datetime import datetime
 
 STREAM = "telemetry"
 ADMIN_STREAM = "telemetry-admin"
@@ -11,7 +12,9 @@ CONSUMER = "consumer_1"
 BATCH_SIZE = 1000
 BLOCK_MS = 1000
 FLUSH_INTERVAL_SEC = 2.0
-last_flush = time.time()
+
+def get_ts():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + ":"
 
 def create_all_tables(ch):
     qs = []
@@ -44,7 +47,8 @@ def create_all_tables(ch):
     CREATE INDEX IF NOT EXISTS idx_series_sid_serial
     ON series(series_id, run_serial_num)
     """)
-    
+
+    print(get_ts(), "start of intake server")
     for q in qs:
         print(q)
         ch.execute(q)
@@ -74,8 +78,10 @@ class StreamToSqlite3:
                 pass  # group already exists
 
     def flush(self):
-        if not self.buffer:
+        if len(self.buffer) == 0:
             return
+
+        print(get_ts(), f"flush: {len(self.buffer)} msgs")
 
         rows = []
         msg_ids = []
@@ -90,18 +96,16 @@ class StreamToSqlite3:
                 msg_ids.append(msg_id)
 
         self.buffer.clear()
-        global last_flush
-        last_flush = time.time()
 
         # 1. Insert into sqlite3
         cols = ",".join(list(data.keys()))
         placeholders = ",".join("?" * len(data))
-        #print("inserting ", rows)
+        #print("inserting ", placeholders, rows, msg_ids)
         self.ch.executemany(f"insert into series({cols}) values ({placeholders})", rows)
         self.ch.commit()
 
         # 2. ACK only after successful insert
-        if msg_ids:
+        if len(msg_ids) > 0:
             self.r.xack(STREAM, GROUP, *msg_ids)
 
     def process_admin_messages(self, messages):
@@ -113,7 +117,7 @@ class StreamToSqlite3:
             columns = ", ".join(row.keys())
             placeholders = ", ".join(f":{k}" for k in row.keys())
             sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-            #print("sql:", sql)
+            #print("sql:", sql, row)
             self.ch.execute(sql, row)
             self.ch.commit()
             self.r.publish(data['reply-to'], "OK")
@@ -126,32 +130,22 @@ class StreamToSqlite3:
         while True:
             resp = self.r.xreadgroup(GROUP, CONSUMER, {STREAM: ">", ADMIN_STREAM: ">"}, count=500, block=BLOCK_MS)
 
-            if not resp:
-                continue
-            
-            for stream_name, messages in resp:
-                if stream_name == STREAM:
-                    for msg_id, data in messages:
-                        self.buffer.append((msg_id, data))
-                elif stream_name == ADMIN_STREAM:
-                    #print("ADMIN_STREAM:", messages)
-                    self.process_admin_messages(messages)
-                else:
-                    print("unknown stream_name:", stream_name)
+            if resp:
+                for stream_name, messages in resp:
+                    if stream_name == STREAM:
+                        print(get_ts(), "nof messages:", len(messages))
+                        for msg_id, data in messages:
+                            self.buffer.append((msg_id, data))
+                    elif stream_name == ADMIN_STREAM:
+                        #print("ADMIN_STREAM:", messages)
+                        self.process_admin_messages(messages)
+                    else:
+                        print("unknown stream_name:", stream_name)
 
-            # flush by size
-            if len(self.buffer) >= BATCH_SIZE:
-                self.flush()
-            elif time.time() - last_flush > FLUSH_INTERVAL_SEC:
-                self.flush()
-
-            # optional periodic flush (low latency)
-            else:
-                time.sleep(0.01)
-
+            self.flush()
 
 if __name__ == "__main__":
     sqlite3_db_fn = sys.argv[1]
-    print("db file:", sqlite3_db_fn)
+    print(get_ts(), "db file:", sqlite3_db_fn)
     worker = StreamToSqlite3(sqlite3_db_fn)
     worker.run()
