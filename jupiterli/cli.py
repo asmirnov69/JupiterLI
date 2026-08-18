@@ -52,6 +52,8 @@ def init(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't s
         print_error("data_dir is not specified, giving up...")
         return
 
+    data_dir = os.path.expanduser(data_dir)
+    
     print_line(quiet_mode, f"jupiterli will place all its files into location: {data_dir}")
     handle_proceed_yn(proceed)
 
