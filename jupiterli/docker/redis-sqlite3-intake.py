@@ -6,8 +6,6 @@ from datetime import datetime
 
 STREAM = "telemetry"
 ADMIN_STREAM = "telemetry-admin"
-GROUP = "ch_group"
-CONSUMER = "consumer_1"
 
 BATCH_SIZE = 1000
 BLOCK_MS = 1000
@@ -25,7 +23,7 @@ def create_all_tables(ch):
     argv0 varcharg, args varchar, run_label varchar
     )
     """)
-    
+
     qs.append("""
     create table if not exists series_dets (
     series_id varchar,
@@ -48,6 +46,17 @@ def create_all_tables(ch):
     ON series(series_id, run_serial_num)
     """)
 
+    # Replaces redis consumer-group bookkeeping: the last stream id we've
+    # durably applied to sqlite, per stream. This is updated in the same
+    # transaction as the data it protects, so a restart can resume without
+    # a group's PEL (pending entries list).
+    qs.append("""
+    CREATE TABLE IF NOT EXISTS stream_checkpoints (
+    stream_name varchar PRIMARY KEY,
+    last_id varchar
+    )
+    """)
+
     print(get_ts(), "start of intake server")
     for q in qs:
         print(q)
@@ -59,23 +68,42 @@ class StreamToSqlite3:
         self.ch = sqlite3.connect(sqlite3_db_fn)
         self.ch.execute("PRAGMA journal_mode=WAL")
         self.ch.execute("PRAGMA synchronous=NORMAL")
-        self.ch.commit()        
+        self.ch.commit()
         create_all_tables(self.ch)
         if 1: # verify WAL settings
             mode = self.ch.execute("PRAGMA journal_mode").fetchone()[0]
             sync = self.ch.execute("PRAGMA synchronous").fetchone()[0]
             print("journal_mode =", mode)
             print("synchronous =", sync)
-            
-        self.buffer = []
 
-    def ensure_group(self):
-        for stream in [STREAM, ADMIN_STREAM]:
-            try:
-                self.r.xgroup_create(name = stream, groupname = GROUP, id="$", mkstream=True)
-            except redis.exceptions.ResponseError:
-                #print("xgroup_create exception")
-                pass  # group already exists
+        self.buffer = []
+        # Next read position per stream, passed straight to XREAD. "$" means
+        # "only entries added from now on" and is used until load_checkpoints()
+        # finds a real resume point on disk.
+        self.last_ids = {STREAM: "$", ADMIN_STREAM: "$"}
+
+    def load_checkpoints(self):
+        for stream in (STREAM, ADMIN_STREAM):
+            row = self.ch.execute(
+                "SELECT last_id FROM stream_checkpoints WHERE stream_name = ?",
+                (stream,),
+            ).fetchone()
+            if row:
+                self.last_ids[stream] = row[0]
+        print(get_ts(), "resuming from", self.last_ids)
+
+    def _save_checkpoint(self, stream_name, last_id):
+        # Caller is responsible for the commit. Doing this insert in the same
+        # transaction as the data it checkpoints is what makes resuming after
+        # a restart safe - this is the replacement for xack.
+        self.ch.execute(
+            """
+            INSERT INTO stream_checkpoints(stream_name, last_id) VALUES (?, ?)
+            ON CONFLICT(stream_name) DO UPDATE SET last_id = excluded.last_id
+            """,
+            (stream_name, last_id),
+        )
+        self.last_ids[stream_name] = last_id
 
     def flush(self):
         if len(self.buffer) == 0:
@@ -84,51 +112,70 @@ class StreamToSqlite3:
         print(get_ts(), f"flush: {len(self.buffer)} msgs")
 
         rows = []
-        msg_ids = []
+        cols = None
+        last_id = None
 
         for msg_id, data in self.buffer:
+            last_id = msg_id  # buffer is in ascending redis-id order
             try:
-                data = json.loads(data.get('data'))
-                rows.append(list(data.values()))
-                msg_ids.append(msg_id)
+                parsed = json.loads(data.get('data'))
+                rows.append(list(parsed.values()))
+                cols = list(parsed.keys())
             except Exception as e:
-                print("exception", e)
-                msg_ids.append(msg_id)
+                print("exception parsing", msg_id, ":", e)
 
         self.buffer.clear()
 
         # 1. Insert into sqlite3
-        cols = ",".join(list(data.keys()))
-        placeholders = ",".join("?" * len(data))
-        #print("inserting ", placeholders, rows, msg_ids)
-        self.ch.executemany(f"insert into series({cols}) values ({placeholders})", rows)
-        self.ch.commit()
+        if rows:
+            try:
+                cols_str = ",".join(cols)
+                placeholders = ",".join("?" * len(cols))
+                self.ch.executemany(f"insert into series({cols_str}) values ({placeholders})", rows)
+            except Exception as e:
+                # Drop the batch instead of crash-looping on it forever. With
+                # no consumer group PEL, a crash here would just replay the
+                # same bad batch again from the checkpoint after restart.
+                print("exception inserting batch, dropping", len(rows), "rows:", e)
+                self.ch.rollback()
 
-        # 2. ACK only after successful insert
-        if len(msg_ids) > 0:
-            self.r.xack(STREAM, GROUP, *msg_ids)
+        # 2. Checkpoint + commit together, so the read position only moves
+        # past a batch once it has been durably applied (or deliberately
+        # dropped, per above).
+        if last_id is not None:
+            self._save_checkpoint(STREAM, last_id)
+            self.ch.commit()
 
     def process_admin_messages(self, messages):
-        processed_msg_ids = []
         for msg_id, data in messages:
-            #print("admin message:", data)
-            table_name = data["table"]
-            row = json.loads(data["row"])
-            columns = ", ".join(row.keys())
-            placeholders = ", ".join(f":{k}" for k in row.keys())
-            sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-            #print("sql:", sql, row)
-            self.ch.execute(sql, row)
+            reply_to = data.get("reply-to")
+            ok = True
+            try:
+                table_name = data["table"]
+                row = json.loads(data["row"])
+                columns = ", ".join(row.keys())
+                placeholders = ", ".join(f":{k}" for k in row.keys())
+                sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+                self.ch.execute(sql, row)
+            except Exception as e:
+                print("exception processing admin message", msg_id, ":", e)
+                self.ch.rollback()
+                ok = False
+
+            # Advance the checkpoint either way so a single bad message can't
+            # wedge the stream forever - same skip-and-move-on approach as
+            # the malformed-JSON case in flush().
+            self._save_checkpoint(ADMIN_STREAM, msg_id)
             self.ch.commit()
-            self.r.publish(data['reply-to'], "OK")
-            processed_msg_ids.append(msg_id)
-        self.r.xack(ADMIN_STREAM, GROUP, *processed_msg_ids)
-        
+
+            if reply_to:
+                self.r.publish(reply_to, "OK" if ok else "ERROR")
+
     def run(self):
-        self.ensure_group()
+        self.load_checkpoints()
 
         while True:
-            resp = self.r.xreadgroup(GROUP, CONSUMER, {STREAM: ">", ADMIN_STREAM: ">"}, count=500, block=BLOCK_MS)
+            resp = self.r.xread(self.last_ids, count=500, block=BLOCK_MS)
 
             if resp:
                 for stream_name, messages in resp:
@@ -137,7 +184,6 @@ class StreamToSqlite3:
                         for msg_id, data in messages:
                             self.buffer.append((msg_id, data))
                     elif stream_name == ADMIN_STREAM:
-                        #print("ADMIN_STREAM:", messages)
                         self.process_admin_messages(messages)
                     else:
                         print("unknown stream_name:", stream_name)
