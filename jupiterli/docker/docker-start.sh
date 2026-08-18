@@ -25,7 +25,7 @@ echo "installing intake script deps"
 /host-user-apps/venv/bin/pip install paho-mqtt
 
 echo "running intake script"
-#/host-user-apps/venv/bin/python -u /host-user-apps/mqtt-sqlite3-intake.py /sqlite3-data/data.db >& /logs/mqtt-sqlite3-intake.py.log &
+/host-user-apps/venv/bin/python -u /host-user-apps/mqtt-sqlite3-intake.py /sqlite3-data/data.db >& /logs/mqtt-sqlite3-intake.py.log &
 
 echo "docker-start.sh done"
 exec sleep 2147483647
