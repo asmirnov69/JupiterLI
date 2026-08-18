@@ -4,15 +4,10 @@ import json
 import uuid, time
 import os, socket, sys
 
-mqttc = mqtt.Client(CallbackAPIVersion.VERSION2)
-#mqttc.on_connect = on_connect
-#mqttc.on_message = on_message
-mqttc.connect("h1", 1883, 60)
-mqttc.loop_start()
-
 run_id = str(uuid.uuid4())
 series_ids = {} # key => series_id
 run_serial_num = 0
+mqtcc = None
 
 def two_way_call(stream, table, row):
     global mqttc
@@ -22,6 +17,13 @@ def two_way_call(stream, table, row):
     mqttc.publish(stream, full_msg)
 
 def save_run_dets():
+    global mqttc
+    mqttc = mqtt.Client(CallbackAPIVersion.VERSION2)
+    #mqttc.on_connect = on_connect
+    #mqttc.on_message = on_message
+    mqttc.connect("h1", 1883, 60)
+    mqttc.loop_start()
+    
     global run_id
     host = socket.gethostname()
     pid = os.getpid()
