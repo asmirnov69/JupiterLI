@@ -17,14 +17,20 @@ ARG CURR_GID
 
 USER root
 
-RUN apt-get update && \
-    apt-get install -y gettext-base redis python3.10 python3.10-venv git curl && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y software-properties-common \
+    && apt-get install -y gettext-base redis python3.10 python3.10-venv git curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-add-repository ppa:mosquitto-dev/mosquitto-ppa \
+    && apt-get update \
+    && apt-get install -y mosquitto \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --chmod=755 docker-start.sh /
 
 RUN mkdir /host-user-apps
-COPY redis-sqlite3-intake.py /host-user-apps/
+COPY mosquitto.conf /host-user-apps/
+COPY mqtt-sqlite3-intake.py /host-user-apps/
 
 COPY --from=frontend-build /workspace/JupiterLI-browser/backend /host-user-apps/JupiterLI-browser/backend
 COPY --from=frontend-build /workspace/JupiterLI-browser/frontend/dist /host-user-apps/JupiterLI-browser/frontend/dist

@@ -80,7 +80,7 @@ def init(quiet_mode: bool = typer.Option(False, "--quiet", "-q", help = "don't s
     podman_utils.podman_build(quiet_mode, os.path.join(PKG_DIR, "docker"), jli_image_name, os.path.join(PKG_DIR, "docker/Dockerfile"), data_dir)
     jli_container_id = podman_utils.podman_create(quiet_mode = quiet_mode, image = jli_image_name,
                                                   name = jli_container_name, labels = [("datadir", data_dir), ("browser-port", 5173)],
-                                                  ports = [(6379, 6379), (5173, 5173)],
+                                                  ports = [(1883, 1883), (5173, 5173)],
                                                   volumes = [(sqlite3_dir, "/sqlite3-data"), (log_dir, "/logs")],
                                                   env = {"HOME": "/host-user-apps"})
     print_line(quiet_mode, f"jli_container_id: {jli_container_id}")
