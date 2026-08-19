@@ -34,7 +34,7 @@ def podman_status():
     cmds.append(("status", "podman inspect -f '{{ index .State.Status }}' jupiterli"))
     cmds.append(("image", "podman inspect -f '{{ index .RepoTags }} ' jupiterli-image"))
     cmds.append(("datadir", "podman inspect -f '{{ index .Config.Labels \"datadir\" }}' jupiterli"))
-    cmds.append(("browser-port", "podman inspect -f '{{ index .Config.Labels \"browser-port\" }}' jupiterli"))
+    cmds.append(("db-access-port", "podman inspect -f '{{ index .Config.Labels \"db-access-port\" }}' jupiterli"))
     for l, cmd in cmds:
         print(l, end = ': ')
         process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,)

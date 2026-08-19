@@ -4,17 +4,8 @@ set -x
 
 echo "docker-start.sh as user `id -a`"
 
-# mosquitto start
 echo "starting mosquitto"
 mosquitto -c /host-user-apps/mosquitto.conf >& /logs/mosquitto.log &
-
-# JupiterLI-browser
-echo "running JupiterLI-browser backend"
-cd /host-user-apps/JupiterLI-browser/backend
-venv/bin/uvicorn app.main:app --reload >& /logs/backend.logs &
-
-echo "running JupiterLI-browser frontend"
-venv/bin/uvicorn simple_website:app --host 0.0.0.0 --port 5173 >& /logs/simple_website.log &
 
 sleep 3
 
@@ -23,6 +14,12 @@ echo "creating venv"
 python3 -m venv /host-user-apps/venv
 echo "installing intake script deps"
 /host-user-apps/venv/bin/pip install paho-mqtt
+
+echo "installing db access script deps"
+/host-user-apps/venv/bin/pip install -r /host-user-apps/db-access-backend/requirements.txt
+
+echo "starting db access server"
+/host-user-apps/venv/bin/uvicorn --host=0.0.0.0 --app-dir=/host-user-apps/db-access-backend app.main:app --reload >& /logs/db-access-server.log &
 
 echo "running intake script"
 /host-user-apps/venv/bin/python -u /host-user-apps/mqtt-sqlite3-intake.py /sqlite3-data/data.db >& /logs/mqtt-sqlite3-intake.py.log &

@@ -8,8 +8,6 @@ import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion
 
 TELEMETRY_SUBJ = "telemetry"
-TELEMETRY_ADMIN_SUBJ_IN = "telemetry-admin-in"
-TELEMETRY_ADMIN_SUBJ_OUT = "telemetry-admin-out"
 
 BATCH_SIZE = 1000
 BLOCK_MS = 1000
@@ -61,8 +59,6 @@ def on_connect(client, userdata, flags, reason_code, properties):
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe(TELEMETRY_SUBJ)
-    client.subscribe(TELEMETRY_ADMIN_SUBJ_IN)
-    
         
 class StreamToSqlite3:
     def __init__(self, sqlite3_db_fn):
@@ -89,10 +85,6 @@ class StreamToSqlite3:
         print(msg.topic+" "+str(msg.payload))
         if msg.topic == TELEMETRY_SUBJ:
             self.process_message(msg.payload)
-        elif msg.topic == TELEMETRY_ADMIN_SUBJ_IN:
-            self.process_admin_message(msg.payload)
-        elif msg.topic == TELEMETRY_ADMIN_SUBJ_OUT:
-            print("ignore")
         else:
             print("unknown subject:", msg.topic)
 
@@ -114,8 +106,6 @@ class StreamToSqlite3:
             print("exception processing admin message", msg, ":", e)
             self.ch.rollback()
             ok = False
-
-        self.mqttc.publish(TELEMETRY_ADMIN_SUBJ_OUT, json.dumps({"reply-to": reply_to, "status": "OK" if ok else "ERROR"}))
 
     def process_message(self, msg):
         self.buffer.append(msg)

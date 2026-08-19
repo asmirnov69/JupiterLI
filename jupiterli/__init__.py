@@ -1,6 +1,7 @@
 import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion
 import json
+import urllib.request
 import uuid, time
 import os, socket, sys
 
@@ -8,13 +9,7 @@ run_id = str(uuid.uuid4())
 series_ids = {} # key => series_id
 run_serial_num = 0
 mqtcc = None
-
-def two_way_call(stream, table, row):
-    global mqttc
-    reply_channel = f"reply:{uuid.uuid4()}"
-    full_msg = json.dumps({"reply-to": reply_channel, "table": table, "row": json.dumps(row)})
-    print("two_way_call:", full_msg)
-    mqttc.publish(stream, full_msg)
+db_access_server_url = "http://h1:8000/api/add-row"
 
 def save_run_dets():
     global mqttc
@@ -31,12 +26,38 @@ def save_run_dets():
     run_label = os.environ.get("RUN_LABEL")
     if run_label is None:
         run_label = os.environ.get("RL")        
-    row = {"run_id": run_id, "created_ts": time.time(), "host": host, "pid": pid, "argv0": sys.executable, "args": " ".join(sys.argv), "run_label": run_label}
-    two_way_call("telemetry-admin-in", "runs_dets", row)
+
+    row_j = json.dumps({"run_id": run_id, "created_ts": time.time(), "host": host, "pid": pid, "argv0": sys.executable, "args": " ".join(sys.argv), "run_label": run_label})
+    row = {"table": "runs_dets", "row": row_j}
+    try:
+        json_bytes = json.dumps(row).encode("utf-8")
+        req = urllib.request.Request(db_access_server_url, data=json_bytes, method="POST")
+        req.add_header("Content-Type", "application/json")
+        req.add_header("Accept", "application/json")
+        with urllib.request.urlopen(req) as response:
+            result = response.read().decode("utf-8")
+            print("save_run_dets:", response)
+            mqttc.publish("telemetry-admin", row_j)
+    except urllib.error.HTTPError as e:
+        # If FastAPI still rejects it with a 422, this prints out the exact reason why
+        print(f"HTTP Error: {e.code}")
+        error_details = e.read().decode("utf-8")
+        print(f"Validation details from FastAPI: {error_details}")
+    except urllib.error.URLError as e:
+        print(f"Failed to reach the server. Reason: {e.reason}")
 
 def save_series_dets(series_id, run_id, key):
-    row = {"series_id": series_id, "run_id": run_id, "key": key}
-    two_way_call("telemetry-admin-in", "series_dets", row)
+    global mqttc
+    row_j = json.dumps({"series_id": series_id, "run_id": run_id, "key": key})
+    row = {"table": "series_dets", "row": row_j}
+    json_bytes = json.dumps(row).encode("utf-8")
+    req = urllib.request.Request(db_access_server_url, data=json_bytes, method="POST")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("Accept", "application/json")   
+    with urllib.request.urlopen(req) as response:
+        result = response.read().decode("utf-8")
+        print("save_series_dets:", response)
+    mqttc.publish("telemetry-admin", row_j)
     
 def get_series_id(key:str) -> tuple[bool, str]:
     if key in series_ids:
