@@ -88,25 +88,6 @@ class StreamToSqlite3:
         else:
             print("unknown subject:", msg.topic)
 
-    def process_admin_message(self, msg):
-        data = json.loads(msg)
-        row = json.loads(data["row"])
-        reply_to = data.get("reply-to")
-        ok = True
-        try:
-            table_name = data["table"]
-            row = json.loads(data["row"])
-            columns = ", ".join(row.keys())
-            placeholders = ", ".join(f":{k}" for k in row.keys())
-            sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-            #print("admin sql:", sql, row)
-            self.ch.execute(sql, row)
-            self.ch.commit()
-        except Exception as e:
-            print("exception processing admin message", msg, ":", e)
-            self.ch.rollback()
-            ok = False
-
     def process_message(self, msg):
         self.buffer.append(msg)
         ts = time.time()
