@@ -33,12 +33,12 @@ class SQLiteClient:
         cols = [d[0] for d in cur.description]
         return SQLiteQueryResult(rows, cols)
 
-    def insert_row(self, table_name, row):
-        columns = ", ".join(row.keys())
-        placeholders = ", ".join(f":{k}" for k in row.keys())
+    def insert_rec(self, table_name, rec):
+        columns = ", ".join(rec.keys())
+        placeholders = ", ".join(f":{k}" for k in rec.keys())
         sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
         #print("admin sql:", sql, row)
-        self.conn.execute(sql, row)
+        self.conn.execute(sql, rec)
         self.conn.commit()
     
 def get_client():

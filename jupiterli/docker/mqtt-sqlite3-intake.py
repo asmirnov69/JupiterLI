@@ -19,7 +19,8 @@ def get_ts():
 def create_all_tables(ch):
     qs = []
     qs.append("""
-    CREATE TABLE IF NOT EXISTS runs_dets (
+    CREATE TABLE IF NOT EXISTS runs (
+    type varchar,
     run_id varchar,
     created_ts real, host varchar, pid integer,
     argv0 varcharg, args varchar, run_label varchar
@@ -27,7 +28,8 @@ def create_all_tables(ch):
     """)
 
     qs.append("""
-    create table if not exists series_dets (
+    create table if not exists series (
+    type varchar,
     series_id varchar,
     run_id varchar,
     key varchar
@@ -35,7 +37,8 @@ def create_all_tables(ch):
     """)
 
     qs.append("""
-    create table if not exists series (
+    create table if not exists series_points (
+    type varchar,
     series_id varchar,
     run_serial_num integer,
     timestamp real,
@@ -44,8 +47,8 @@ def create_all_tables(ch):
     """)
 
     qs.append("""
-    CREATE INDEX IF NOT EXISTS idx_series_sid_serial
-    ON series(series_id, run_serial_num)
+    CREATE INDEX IF NOT EXISTS idx_series_points_sid_serial
+    ON series_points(series_id, run_serial_num)
     """)
 
     print(get_ts(), "start of intake server")
@@ -58,8 +61,12 @@ def on_connect(client, userdata, flags, reason_code, properties):
     print(f"Connected with result code {reason_code}")
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    client.subscribe(TELEMETRY_SUBJ)
-        
+    client.subscribe("telemetry/series/+")
+    
+    ## intake server ignore telemetry-admin messages since they corresponds to two-way calls
+    ## such two-way calls (insert new run etc) are handled by db-access-server
+    #client.subscribe("telemetry-admin") 
+
 class StreamToSqlite3:
     def __init__(self, sqlite3_db_fn):
         self.mqttc = mqtt.Client(CallbackAPIVersion.VERSION2)
@@ -82,8 +89,8 @@ class StreamToSqlite3:
 
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client, userdata, msg):
-        print(msg.topic+" "+str(msg.payload))
-        if msg.topic == TELEMETRY_SUBJ:
+        print(msg.topic, str(msg.payload))
+        if msg.topic.startswith("telemetry/series/"):
             self.process_message(msg.payload)
         else:
             print("unknown subject:", msg.topic)
@@ -94,7 +101,7 @@ class StreamToSqlite3:
         if len(self.buffer) > BATCH_SIZE or ts - self.prev_flush_ts > FLUSH_INTERVAL_SEC:
             self.prev_flush_ts = ts
             self.flush()
-            
+
     def flush(self):
         if len(self.buffer) == 0:
             return
@@ -118,7 +125,7 @@ class StreamToSqlite3:
             try:
                 cols_str = ",".join(cols)
                 placeholders = ",".join("?" * len(cols))
-                self.ch.executemany(f"insert into series({cols_str}) values ({placeholders})", rows)
+                self.ch.executemany(f"insert into series_points({cols_str}) values ({placeholders})", rows)
                 self.ch.commit()
             except Exception as e:
                 # Drop the batch instead of crash-looping on it forever. With

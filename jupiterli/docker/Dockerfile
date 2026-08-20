@@ -1,18 +1,16 @@
-from ubuntu:22.04
+FROM alpine:3.22
 
 ARG CURR_UID
 ARG CURR_GID
 
 USER root
 
-RUN apt-get update && apt-get install -y software-properties-common \
-    && apt-get install -y gettext-base redis python3.10 python3.10-venv git curl \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-add-repository ppa:mosquitto-dev/mosquitto-ppa \
-    && apt-get update \
-    && apt-get install -y mosquitto \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    bash \
+    gettext \
+    python3 \
+    py3-pip \
+    mosquitto
 
 COPY --chmod=755 docker-start.sh /
 

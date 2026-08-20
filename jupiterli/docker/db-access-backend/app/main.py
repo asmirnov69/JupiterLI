@@ -41,7 +41,6 @@ class SeriesHistory(BaseModel):
     values: list[float]
     serials: list[int]
 
-
 @app.get("/api/health")
 def health() -> dict:
     get_client().query("SELECT 1")
@@ -91,11 +90,16 @@ def series_history(series_id: str, max_serial: int | None = None) -> SeriesHisto
     )
 
 @app.post("/api/add-row", status_code = 201)
-def add_row(payload: dict):
-    print("add_row:", payload)
-    table = payload['table']
-    row = json.loads(payload['row'])
-    if not table in ["runs_dets", "series_dets"]:
-        raise Exception(f"unknown table {table}")
-    get_client().insert_row(table, row)
+def add_row(rec: dict):
+    print("add_row:", rec)
+    rec_type = rec['type']
+
+    if rec_type == 'run':
+        table_name = 'runs'
+    elif rec_type == 'series':
+        table_name = 'series'
+    else:
+        raise Exception(f"unhandled rec_type {rec_type}")
+    
+    get_client().insert_rec(table_name, rec)
     return {"status": "OK"}
