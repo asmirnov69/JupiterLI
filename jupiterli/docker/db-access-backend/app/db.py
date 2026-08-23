@@ -22,26 +22,24 @@ class SQLiteQueryResult:
 
 class SQLiteClient:
     def __init__(self, db_path):
-        self.conn = sqlite3.connect(db_path)
+        self.db_path = db_path
         
     def query(self, sql, parameters=None):
-        cur = self.conn.cursor()
-        new_sql = ch_to_sqlite_sql(sql)
-        cur.execute(new_sql, parameters or ())
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            new_sql = ch_to_sqlite_sql(sql)
+            cur.execute(new_sql, parameters or ())
         
-        rows = cur.fetchall()
-        cols = [d[0] for d in cur.description]
-        return SQLiteQueryResult(rows, cols)
+            rows = cur.fetchall()
+            cols = [d[0] for d in cur.description]
+            return SQLiteQueryResult(rows, cols)
 
     def insert_rec(self, table_name, rec):
-        columns = ", ".join(rec.keys())
-        placeholders = ", ".join(f":{k}" for k in rec.keys())
-        sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-        #print("admin sql:", sql, row)
-        self.conn.execute(sql, rec)
-        self.conn.commit()
-    
-def get_client():
-    conn = SQLiteClient(settings.sqlite3_db_fn)
-    return conn
+        with sqlite3.connect(self.db_path) as conn:
+            columns = ", ".join(rec.keys())
+            placeholders = ", ".join(f":{k}" for k in rec.keys())
+            sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+            #print("admin sql:", sql, row)
+            conn.execute(sql, rec)
+            conn.commit()
 

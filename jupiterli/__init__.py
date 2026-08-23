@@ -27,7 +27,7 @@ def save_run_dets():
     if run_label is None:
         run_label = os.environ.get("RL")        
 
-    rec = {"type": "run", "run_id": run_id, "created_ts": time.time(), "host": host, "pid": pid, "argv0": sys.executable, "args": " ".join(sys.argv), "run_label": run_label}
+    rec = {"table__": "runs", "run_id": run_id, "created_ts": time.time(), "host": host, "pid": pid, "argv0": sys.executable, "args": " ".join(sys.argv), "run_label": run_label}
     rec_js = json.dumps(rec)
     try:
         req = urllib.request.Request(db_access_server_url, data=rec_js.encode("utf-8"), method="POST")
@@ -36,7 +36,6 @@ def save_run_dets():
         with urllib.request.urlopen(req) as response:
             result = response.read().decode("utf-8")
             print("save_run_dets:", response)
-            mqttc.publish("telemetry-admin", rec_js)
     except urllib.error.HTTPError as e:
         # If FastAPI still rejects it with a 422, this prints out the exact reason why
         print(f"HTTP Error: {e.code}")
@@ -47,7 +46,7 @@ def save_run_dets():
 
 def save_series_dets(series_id, run_id, key):
     global mqttc
-    rec = {"type": "series", "series_id": series_id, "run_id": run_id, "key": key}
+    rec = {"table__": "series", "series_id": series_id, "run_id": run_id, "key": key}
     rec_js = json.dumps(rec)
     req = urllib.request.Request(db_access_server_url, data=rec_js.encode("utf-8"), method="POST")
     req.add_header("Content-Type", "application/json")
@@ -55,7 +54,6 @@ def save_series_dets(series_id, run_id, key):
     with urllib.request.urlopen(req) as response:
         result = response.read().decode("utf-8")
         print("save_series_dets:", response)
-        mqttc.publish("telemetry-admin", rec_js)
     
 def get_series_id(key:str) -> tuple[bool, str]:
     if key in series_ids:
@@ -75,6 +73,6 @@ def add_ts_point(key, ts, value):
     global run_serial_num
     run_serial_num += 1
     global mqttc
-    rec = {"type": "series_points", "series_id": series_id, "run_serial_num": run_serial_num, "timestamp": ts, "value": float(value)}
+    rec = {"table__": "series_points", "series_id": series_id, "run_serial_num": run_serial_num, "timestamp": ts, "value": float(value)}
     rec_js = json.dumps(rec)
     mqttc.publish(f"telemetry/series/{series_id}", rec_js)

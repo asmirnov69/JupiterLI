@@ -20,7 +20,6 @@ def create_all_tables(ch):
     qs = []
     qs.append("""
     CREATE TABLE IF NOT EXISTS runs (
-    type varchar,
     run_id varchar,
     created_ts real, host varchar, pid integer,
     argv0 varcharg, args varchar, run_label varchar
@@ -29,7 +28,6 @@ def create_all_tables(ch):
 
     qs.append("""
     create table if not exists series (
-    type varchar,
     series_id varchar,
     run_id varchar,
     key varchar
@@ -38,7 +36,6 @@ def create_all_tables(ch):
 
     qs.append("""
     create table if not exists series_points (
-    type varchar,
     series_id varchar,
     run_serial_num integer,
     timestamp real,
@@ -89,7 +86,7 @@ class StreamToSqlite3:
 
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client, userdata, msg):
-        print(msg.topic, str(msg.payload))
+        #print(msg.topic, str(msg.payload))
         if msg.topic.startswith("telemetry/series/"):
             self.process_message(msg.payload)
         else:
@@ -112,9 +109,13 @@ class StreamToSqlite3:
         cols = []
         for msg in self.buffer:            
             try:
-                parsed = json.loads(msg)
-                rows.append(list(parsed.values()))
-                cols = list(parsed.keys())
+                msg_j = json.loads(msg)
+                tn = msg_j.pop('table__', "")
+                if tn != "series_points":
+                    print("mqtt-sqlite3-intake.py: unknown table_name__ field value:", tn)
+                    continue
+                rows.append(list(msg_j.values()))
+                cols = list(msg_j.keys())
             except Exception as e:
                 print("exception parsing", msg_id, ":", e)
 
@@ -125,6 +126,8 @@ class StreamToSqlite3:
             try:
                 cols_str = ",".join(cols)
                 placeholders = ",".join("?" * len(cols))
+                insert_q = f"insert into series_points({cols_str}) values ({placeholders})"
+                #print("mqtt-sqlite3-intake.py: insert query:", insert_q)
                 self.ch.executemany(f"insert into series_points({cols_str}) values ({placeholders})", rows)
                 self.ch.commit()
             except Exception as e:

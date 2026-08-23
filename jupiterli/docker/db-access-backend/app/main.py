@@ -3,13 +3,42 @@ import logging
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
+from contextlib import asynccontextmanager
 
 from .config import settings
-from .db import get_client
+from .db import SQLiteClient
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="db-access-server")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup initialization
+    print("Initializing db-access-backend")
+
+    print("Connect to mqtt")
+    app.mqttc = mqtt.Client(CallbackAPIVersion.VERSION2)
+    #app.mqttc.on_connect = on_connect
+    #app.mqttc.on_message = on_message
+    app.mqttc.connect(settings.mqtt_host, settings.mqtt_port, 60)
+    app.mqttc.loop_start()
+    print("done")
+    print("connect to db")
+    app.db = SQLiteClient(settings.sqlite3_db_fn)
+    print("done")
+    
+    print("Initialization complete")
+    print(flush = True) # without this nothing shows in log
+
+    yield
+
+    # Shutdown cleanup
+    print("Shutting down...")
+    print("=====================")
+    print(flush = True) # without this nothing shows in log
+
+app = FastAPI(title="db-access-server", lifespan = lifespan)
 
 class Run(BaseModel):
     run_id: str
@@ -43,20 +72,20 @@ class SeriesHistory(BaseModel):
 
 @app.get("/api/health")
 def health() -> dict:
-    get_client().query("SELECT 1")
+    app.db.query("SELECT 1")
     return {"ok": True}
 
 @app.get("/api/runs", response_model=list[Run])
 def list_runs() -> list[Run]:
-    result = get_client().query(
-        "SELECT run_id, run_label FROM runs_dets ORDER BY created_ts DESC"
+    result = app.db.query(
+        "SELECT run_id, run_label FROM runs ORDER BY created_ts DESC"
     )
     return [Run(run_id=row[0], run_label=row[1]) for row in result.result_rows]
 
 @app.get("/api/runs/{run_id}/series", response_model=list[Series])
 def list_series(run_id: str) -> list[Series]:
-    result = get_client().query(
-        "SELECT series_id, key FROM series_dets WHERE run_id = %(run_id)s ORDER BY key",
+    result = app.db.query(
+        "SELECT series_id, key FROM series WHERE run_id = %(run_id)s ORDER BY key",
         parameters={"run_id": run_id},
     )
     return [Series(series_id=row[0], key=row[1]) for row in result.result_rows]
@@ -68,17 +97,17 @@ def series_history(series_id: str, max_serial: int | None = None) -> SeriesHisto
     the first live Redis observation). Without it, returns the full series —
     used as a fallback for runs that no longer produce live data."""
     if max_serial is None:
-        result = get_client().query(
+        result = app.db.query(
             """SELECT timestamp, value, run_serial_num
-               FROM series
+               FROM series_points
                WHERE series_id = %(series_id)s
                ORDER BY run_serial_num""",
             parameters={"series_id": series_id},
         )
     else:
-        result = get_client().query(
+        result = app.db.query(
             """SELECT timestamp, value, run_serial_num
-               FROM series
+               FROM series_points
                WHERE series_id = %(series_id)s AND run_serial_num < %(max_serial)s
                ORDER BY run_serial_num""",
             parameters={"series_id": series_id, "max_serial": max_serial},
@@ -92,14 +121,18 @@ def series_history(series_id: str, max_serial: int | None = None) -> SeriesHisto
 @app.post("/api/add-row", status_code = 201)
 def add_row(rec: dict):
     print("add_row:", rec)
-    rec_type = rec['type']
+    rec_js = json.dumps(rec)
+    table_name = rec.pop('table__', None)
 
-    if rec_type == 'run':
-        table_name = 'runs'
-    elif rec_type == 'series':
-        table_name = 'series'
-    else:
-        raise Exception(f"unhandled rec_type {rec_type}")
+    if table_name is None:
+        print("db-access-server::add_rec: missing 'table__' field in rec")
+        return {"status": "NOT-OK" }
     
-    get_client().insert_rec(table_name, rec)
+    if not table_name in ['runs', 'series']:
+        print("db-access-server::add_rec: unknown table:", table_name)
+        return {"status": "NOT-OK"}
+    
+    app.db.insert_rec(table_name, rec)
+    app.mqttc.publish("telemetry-admin", rec_js)
+
     return {"status": "OK"}

@@ -2,4 +2,5 @@ fastapi>=0.110
 uvicorn[standard]>=0.27
 pydantic>=2.5
 pydantic-settings>=2.1
+paho-mqtt>=2.1
 
