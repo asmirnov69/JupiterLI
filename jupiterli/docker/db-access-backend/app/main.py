@@ -41,13 +41,21 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="db-access-server", lifespan = lifespan)
 
 class Run(BaseModel):
+    table__: str
     run_id: str
+    created_ts: float
+    host: str
+    pid: int
+    argv0: str
+    args: str
     run_label: str | None
 
 
 class Series(BaseModel):
+    table__: str
     series_id: str
     key: str
+    run_id: str
 
 class StreamLatestId(BaseModel):
     latest_id: str
@@ -66,6 +74,8 @@ class SeriesLive(BaseModel):
 
 
 class SeriesHistory(BaseModel):
+    table__: str
+    series_id: str
     timestamps: list[float]
     values: list[float]
     serials: list[int]
@@ -78,9 +88,9 @@ def health() -> dict:
 @app.get("/api/runs", response_model=list[Run])
 def list_runs() -> list[Run]:
     result = app.db.query(
-        "SELECT run_id, run_label FROM runs ORDER BY created_ts DESC"
+        "SELECT * FROM runs ORDER BY created_ts DESC"
     )
-    return [Run(run_id=row[0], run_label=row[1]) for row in result.result_rows]
+    return [Run(table__ = 'runs', run_id=row[0], created_ts = row[1], host = row[2], pid = row[3], argv0 = row[4], args = row[5], run_label=row[6]) for row in result.result_rows]
 
 @app.get("/api/runs/{run_id}/series", response_model=list[Series])
 def list_series(run_id: str) -> list[Series]:
@@ -88,7 +98,7 @@ def list_series(run_id: str) -> list[Series]:
         "SELECT series_id, key FROM series WHERE run_id = %(run_id)s ORDER BY key",
         parameters={"run_id": run_id},
     )
-    return [Series(series_id=row[0], key=row[1]) for row in result.result_rows]
+    return [Series(table__ = "series", series_id=row[0], key=row[1], run_id = run_id) for row in result.result_rows]
 
 @app.get("/api/series/{series_id}/history", response_model=SeriesHistory)
 def series_history(series_id: str, max_serial: int | None = None) -> SeriesHistory:
@@ -113,6 +123,8 @@ def series_history(series_id: str, max_serial: int | None = None) -> SeriesHisto
             parameters={"series_id": series_id, "max_serial": max_serial},
         )
     return SeriesHistory(
+        table__ = "series_points",
+        series_id = series_id,
         timestamps=[float(r[0]) for r in result.result_rows],
         values=[float(r[1]) for r in result.result_rows],
         serials=[int(r[2]) for r in result.result_rows],
