@@ -78,7 +78,7 @@ class SeriesHistory(BaseModel):
     series_id: str
     timestamps: list[float]
     values: list[float]
-    serials: list[int]
+    run_serial_nums: list[int]
 
 @app.get("/api/health")
 def health() -> dict:
@@ -127,7 +127,7 @@ def series_history(series_id: str, max_serial: int | None = None) -> SeriesHisto
         series_id = series_id,
         timestamps=[float(r[0]) for r in result.result_rows],
         values=[float(r[1]) for r in result.result_rows],
-        serials=[int(r[2]) for r in result.result_rows],
+        run_serial_nums=[int(r[2]) for r in result.result_rows],
     )
 
 @app.post("/api/add-row", status_code = 201)

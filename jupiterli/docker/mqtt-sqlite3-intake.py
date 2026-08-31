@@ -112,7 +112,7 @@ class StreamToSqlite3:
                 msg_j = json.loads(msg)
                 tn = msg_j.pop('table__', "")
                 if tn != "series_points":
-                    print("mqtt-sqlite3-intake.py: unknown table_name__ field value:", tn)
+                    print("mqtt-sqlite3-intake.py: unknown table__ field value:", tn)
                     continue
                 rows.append(list(msg_j.values()))
                 cols = list(msg_j.keys())
@@ -127,7 +127,8 @@ class StreamToSqlite3:
                 cols_str = ",".join(cols)
                 placeholders = ",".join("?" * len(cols))
                 insert_q = f"insert into series_points({cols_str}) values ({placeholders})"
-                #print("mqtt-sqlite3-intake.py: insert query:", insert_q)
+                print("mqtt-sqlite3-intake.py: insert query:", insert_q)
+                print(rows[0])
                 self.ch.executemany(f"insert into series_points({cols_str}) values ({placeholders})", rows)
                 self.ch.commit()
             except Exception as e:

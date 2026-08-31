@@ -73,6 +73,6 @@ def add_ts_point(key, ts, value):
     global run_serial_num
     run_serial_num += 1
     global mqttc
-    rec = {"table__": "series_points", "series_id": series_id, "run_serial_num": run_serial_num, "timestamp": ts, "value": float(value)}
+    rec = {"table__": "series_points", "series_id": series_id, "timestamps": [ts], "values": [float(value)], "run_serial_nums": [run_serial_num]}
     rec_js = json.dumps(rec)
     mqttc.publish(f"telemetry/series/{series_id}", rec_js)
