@@ -109,13 +109,14 @@ class StreamToSqlite3:
         cols = []
         for msg in self.buffer:            
             try:
-                msg_j = json.loads(msg)
-                tn = msg_j.pop('table__', "")
-                if tn != "series_points":
-                    print("mqtt-sqlite3-intake.py: unknown table__ field value:", tn)
-                    continue
-                rows.append(list(msg_j.values()))
-                cols = list(msg_j.keys())
+                msg_ja = json.loads(msg)
+                for msg_j in msg_ja:
+                    tn = msg_j.pop('table__', "")
+                    if tn != "series_points":
+                        print("mqtt-sqlite3-intake.py: unknown table__ field value:", tn)
+                        continue
+                    rows.append(list(msg_j.values()))
+                    cols = list(msg_j.keys())
             except Exception as e:
                 print("exception parsing", msg_id, ":", e)
 
