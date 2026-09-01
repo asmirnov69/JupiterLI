@@ -50,35 +50,18 @@ class Run(BaseModel):
     args: str
     run_label: str | None
 
-
 class Series(BaseModel):
     table__: str
     series_id: str
     key: str
     run_id: str
 
-class StreamLatestId(BaseModel):
-    latest_id: str
-
-
-class LivePoint(BaseModel):
-    stream_id: str
-    run_serial_num: int
-    timestamp: float
-    value: float
-
-
-class SeriesLive(BaseModel):
-    next_after_id: str
-    entries: list[LivePoint]
-
-
-class SeriesHistory(BaseModel):
+class SeriesPoint(BaseModel):
     table__: str
     series_id: str
-    timestamps: list[float]
-    values: list[float]
-    run_serial_nums: list[int]
+    timestamp: float
+    value: float
+    run_serial_num: int
 
 @app.get("/api/health")
 def health() -> dict:
@@ -100,8 +83,8 @@ def list_series(run_id: str) -> list[Series]:
     )
     return [Series(table__ = "series", series_id=row[0], key=row[1], run_id = run_id) for row in result.result_rows]
 
-@app.get("/api/series/{series_id}/history", response_model=SeriesHistory)
-def series_history(series_id: str, max_serial: int | None = None) -> SeriesHistory:
+@app.get("/api/series/{series_id}/history", response_model=list[SeriesPoint])
+def series_history(series_id: str, max_serial: int | None = None) -> list[SeriesPoint]:
     """One-shot ClickHouse backfill. With max_serial set, returns rows with
     run_serial_num < max_serial (the active-run path: everything older than
     the first live Redis observation). Without it, returns the full series —
@@ -122,13 +105,12 @@ def series_history(series_id: str, max_serial: int | None = None) -> SeriesHisto
                ORDER BY run_serial_num""",
             parameters={"series_id": series_id, "max_serial": max_serial},
         )
-    return SeriesHistory(
-        table__ = "series_points",
-        series_id = series_id,
-        timestamps=[float(r[0]) for r in result.result_rows],
-        values=[float(r[1]) for r in result.result_rows],
-        run_serial_nums=[int(r[2]) for r in result.result_rows],
-    )
+
+    return [SeriesPoint(table__ = "series_points",
+                        series_id = series_id,
+                        timestamp=float(r[0]),
+                        value=float(r[1]),
+                        run_serial_num=int(r[2])) for r in result.result_rows]
 
 @app.post("/api/add-row", status_code = 201)
 def add_row(rec: dict):
