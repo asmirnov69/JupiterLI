@@ -118,7 +118,7 @@ class StreamToSqlite3:
                     rows.append(list(msg_j.values()))
                     cols = list(msg_j.keys())
             except Exception as e:
-                print("exception parsing", msg_id, ":", e)
+                print("exception parsing", msg, ":", e)
 
         self.buffer.clear()
 

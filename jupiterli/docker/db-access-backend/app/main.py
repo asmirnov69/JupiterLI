@@ -127,6 +127,7 @@ def add_row(rec: dict):
         return {"status": "NOT-OK"}
     
     app.db.insert_rec(table_name, rec)
+    print("to publish to telemetry-admin:", rec_js)
     app.mqttc.publish("telemetry-admin", rec_js)
 
     return {"status": "OK"}

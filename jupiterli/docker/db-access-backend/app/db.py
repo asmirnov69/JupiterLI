@@ -39,7 +39,7 @@ class SQLiteClient:
             columns = ", ".join(rec.keys())
             placeholders = ", ".join(f":{k}" for k in rec.keys())
             sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-            #print("admin sql:", sql, row)
+            print("admin sql:", sql, rec)
             conn.execute(sql, rec)
             conn.commit()
 
