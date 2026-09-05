@@ -140,7 +140,9 @@ class StreamToSqlite3:
                 self.ch.rollback()
 
     def run(self):
-        self.mqttc.loop_forever()
+        while True:
+            self.mqttc.loop(timeout = 1.0)
+            self.flush()
 
 if __name__ == "__main__":
     sqlite3_db_fn = sys.argv[1]
